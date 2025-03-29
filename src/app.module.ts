@@ -1,15 +1,16 @@
 //app.module.ts
 import { MikroOrmModule } from '@mikro-orm/nestjs';
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { Logger, Module, OnModuleInit } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import ormConfig from './config/mikro-orm.config';
-import { envConfigParser } from './config/env.config';
+import { EnvConfig, envConfigParser } from './config/env.config';
 import { UsersModule } from './modules/user/user.module';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
@@ -21,6 +22,15 @@ import { UsersModule } from './modules/user/user.module';
       autoLoadEntities: true,
     }),
     EventEmitterModule.forRoot({ global: true }),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { colorize: true } }
+            : undefined,
+      },
+    }),
     UsersModule,
   ],
   controllers: [AppController],
@@ -32,4 +42,14 @@ import { UsersModule } from './modules/user/user.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit {
+  private readonly logger = new Logger(AppModule.name);
+
+  constructor(private readonly configService: ConfigService<EnvConfig>) {}
+
+  onModuleInit() {
+    this.logger.log(
+      `Instance: ${this.configService.get('INSTANCE_NAME')} started on port ${this.configService.get('APP_PORT')}`,
+    );
+  }
+}
