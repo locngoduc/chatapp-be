@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const envConfig = z.object({
   APP_PORT: z.coerce.number().default(3000),
+  INSTANCE_NAME: z.string().nonempty(),
   POSTGRES_USER: z.string().nonempty(),
   POSTGRES_PASSWORD: z.string().nonempty(),
   POSTGRES_HOST: z.string().nonempty(),
