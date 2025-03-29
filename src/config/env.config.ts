@@ -11,6 +11,11 @@ export const envConfig = z.object({
   REDIS_HOST: z.string().nonempty(),
   REDIS_PASSWORD: z.string().nonempty(),
   SESSION_SECRET: z.string().nonempty(),
+  MONGO_USER: z.string().nonempty(),
+  MONGO_PASSWORD: z.string().nonempty(),
+  MONGO_DB: z.string().nonempty(),
+  MONGO_HOST: z.string().nonempty(),
+  MONGO_PORT: z.coerce.number(),
 });
 
 export const envConfigParser = (env: Record<string, any>) => {

@@ -10,7 +10,8 @@ import { AppService } from './app.service';
 import ormConfig from './config/mikro-orm.config';
 import { envConfigParser } from './config/env.config';
 import { UsersModule } from './modules/user/user.module';
-
+import { MongooseModule } from '@nestjs/mongoose';
+import mongooseConfig, { MONGO_URI } from './config/mongoose.config';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: envConfigParser }),
@@ -19,6 +20,9 @@ import { UsersModule } from './modules/user/user.module';
       entities: undefined,
       entitiesTs: undefined,
       autoLoadEntities: true,
+    }),
+    MongooseModule.forRoot(MONGO_URI, {
+      ...mongooseConfig,
     }),
     EventEmitterModule.forRoot({ global: true }),
     UsersModule,
