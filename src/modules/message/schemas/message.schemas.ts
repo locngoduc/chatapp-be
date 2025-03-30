@@ -21,5 +21,8 @@ export class Message {
   attachments?: Attachment[];
 }
 
-export type MessageDocument = HydratedDocument<Message>;
+export type MessageDocument = HydratedDocument<Message> & {
+  createdAt: Date;
+  updatedAt: Date;
+};
 export const MessageSchema = SchemaFactory.createForClass(Message);

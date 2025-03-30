@@ -7,12 +7,12 @@ import { Message, MessageSchema } from './schemas/message.schemas';
 @Module({
   imports: [
     MongooseModule.forFeature(
-      [{ name: 'Message', schema: MessageSchema }],
+      [{ name: Message.name, schema: MessageSchema }],
       'default',
     ),
   ],
   controllers: [MessageController],
   providers: [MessageService],
-  exports: [MongooseModule, MessageService],
+  exports: [MessageService],
 })
 export class MessageModule {}

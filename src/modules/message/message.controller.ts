@@ -1,5 +1,14 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { Message } from './schemas/message.schemas';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
+import { Response } from 'express';
 import { MessageService } from './message.service';
 import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
 
@@ -12,8 +21,21 @@ export class MessageController {
     return this.messageService.createMessage(messageData);
   }
 
-  @Get()
-  async getAllMessages() {
-    return this.messageService.getAllMessages();
+  @Get('group/:groupId')
+  async getMessagesByGroupId(
+    @Param('groupId') groupId: string,
+    @Res() res: Response,
+    @Query('limit') limit: number = 1,
+    @Query('cursor') cursor?: string,
+  ) {
+    const result = await this.messageService.getMessagesByGroupId(
+      groupId,
+      cursor,
+      limit,
+    );
+
+    if (result.isOk()) {
+      return res.status(HttpStatus.OK).json(result.value);
+    } else return result.error.createResponse(res);
   }
 }
