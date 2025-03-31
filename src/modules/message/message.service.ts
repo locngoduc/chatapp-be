@@ -4,8 +4,12 @@ import { Model } from 'mongoose';
 import { Message, MessageDocument } from './schemas/message.schemas';
 import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
 import { err, ok, Result } from 'neverthrow';
-import { PaginationWrapper } from 'src/shared/classes/cursor-pagination-wrapper';
+import {
+  PaginationWrapper,
+  SuccessResponse,
+} from 'src/shared/classes/cursor-pagination-wrapper';
 import { MessageError } from './errors/base-message.error';
+import { UpdateMessageRequestDto } from './dtos/update-message-request.dto';
 @Injectable()
 export class MessageService {
   constructor(
@@ -23,6 +27,8 @@ export class MessageService {
     cursor?: string,
     limit: number = 1,
   ): Promise<Result<PaginationWrapper<Message[]>, MessageError>> {
+    const numericLimit = Number(limit);
+
     try {
       const query: any = { groupId };
 
@@ -36,7 +42,7 @@ export class MessageService {
       const messages = await this.messageModel
         .find(query)
         .sort({ createdAt: -1 })
-        .limit(limit + 1)
+        .limit(numericLimit + 1)
         .exec();
 
       const hasMore = messages.length > limit;
@@ -55,6 +61,54 @@ export class MessageService {
           messages,
           nextCursor,
           hasMore,
+        ),
+      );
+    } catch (error) {
+      console.error(error);
+      return err(new MessageError('Unexpected error'));
+    }
+  }
+
+  async deleteMessage(
+    messageId: string,
+  ): Promise<Result<SuccessResponse<string>, MessageError>> {
+    try {
+      const deletedMessage = await this.messageModel
+        .findByIdAndDelete(messageId)
+        .exec();
+
+      if (!deletedMessage) {
+        return err(new MessageError('Message not found'));
+      }
+
+      return ok(new SuccessResponse('Message deleted successfully'));
+    } catch (error) {
+      console.error(error);
+      return err(new MessageError('Unexpected error'));
+    }
+  }
+
+  async updateMessageById(
+    messageId: string,
+    messageData: UpdateMessageRequestDto,
+  ): Promise<Result<SuccessResponse<Message>, MessageError>> {
+    try {
+      const updatedMessage = await this.messageModel
+        .findByIdAndUpdate(
+          messageId,
+          { $set: { content: messageData.content } },
+          { new: true },
+        )
+        .exec();
+
+      if (!updatedMessage) {
+        return err(new MessageError('Message not found'));
+      }
+
+      return ok(
+        new SuccessResponse<Message>(
+          'Update message successfully',
+          updatedMessage,
         ),
       );
     } catch (error) {
