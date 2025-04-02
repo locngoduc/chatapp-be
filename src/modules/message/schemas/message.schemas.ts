@@ -6,12 +6,22 @@ type Attachment = {
   size: number;
 };
 
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: {
+    createdAt: 'create_at',
+    updatedAt: 'updated_at',
+  },
+  collection: 'messages',
+})
 export class Message {
-  @Prop()
+  @Prop({
+    name: 'author_id',
+  })
   authorId: string;
 
-  @Prop()
+  @Prop({
+    name: 'group_id',
+  })
   groupId: string;
 
   @Prop()

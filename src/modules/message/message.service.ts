@@ -5,9 +5,9 @@ import { Message, MessageDocument } from './schemas/message.schemas';
 import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
 import { err, ok, Result } from 'neverthrow';
 import {
-  PaginationWrapper,
+  CursorPaginationWrapper,
   SuccessResponse,
-} from 'src/shared/classes/cursor-pagination-wrapper';
+} from 'src/shared/classes/wrapper';
 import { MessageError } from './errors/base-message.error';
 import { UpdateMessageRequestDto } from './dtos/update-message-request.dto';
 @Injectable()
@@ -26,7 +26,7 @@ export class MessageService {
     groupId: string,
     cursor?: string,
     limit: number = 1,
-  ): Promise<Result<PaginationWrapper<Message[]>, MessageError>> {
+  ): Promise<Result<CursorPaginationWrapper<Message[]>, MessageError>> {
     const numericLimit = Number(limit);
 
     try {
@@ -56,7 +56,7 @@ export class MessageService {
           : undefined;
 
       return ok(
-        new PaginationWrapper<Message[]>(
+        new CursorPaginationWrapper<Message[]>(
           'success',
           messages,
           nextCursor,

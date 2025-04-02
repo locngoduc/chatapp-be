@@ -15,6 +15,9 @@ import { LoggerModule } from 'nestjs-pino';
 import { MongooseModule } from '@nestjs/mongoose';
 import mongooseConfig, { MONGO_URI } from './config/mongoose.config';
 import { MessageModule } from './modules/message/message.module';
+import { GroupModule } from './modules/group/group.module';
+import { MembershipModule } from './modules/membership/membership.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: envConfigParser }),
@@ -39,6 +42,8 @@ import { MessageModule } from './modules/message/message.module';
     }),
     UsersModule,
     MessageModule,
+    GroupModule,
+    MembershipModule,
   ],
   controllers: [AppController],
   providers: [
