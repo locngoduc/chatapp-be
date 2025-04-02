@@ -9,10 +9,8 @@ import {
 } from '@nestjs/common';
 import { SessionService } from './session.sevice';
 import { Request } from 'express';
-import {
-  AuthenticateGuard,
-  LocalAuthGuard,
-} from 'src/shared/guards/local-auth.guards';
+import { LocalAuthGuard } from 'src/modules/session/guards/local-auth.guard';
+import { AuthenticateGuard } from './guards/authenticate.guard';
 
 @Controller({
   version: '1',

@@ -20,6 +20,8 @@ services:
       - '6379:6379'
     volumes:
       - chat-session:/data
+    networks:
+      - chat_network
 
   rabbitmq:
     image: rabbitmq:4-alpine

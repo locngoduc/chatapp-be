@@ -5,6 +5,8 @@ import { EnvConfig } from './config/env.config';
 import { Logger } from 'nestjs-pino';
 import * as session from 'express-session';
 import * as passport from 'passport';
+import Redis from 'ioredis';
+import { RedisStore } from 'connect-redis';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -12,9 +14,21 @@ async function bootstrap() {
 
   const configService = app.get<ConfigService<EnvConfig>>(ConfigService);
 
+  const redisClient = new Redis({
+    host: configService.getOrThrow<string>('REDIS_HOST'),
+    port: configService.getOrThrow<number>('REDIS_PORT'),
+    password: configService.get<string>('REDIS_PASSWORD'),
+  });
+
+  // await redisClient.connect();
+
   app.use(
     session({
       name: 'chat-session',
+      store: new (RedisStore as any)({
+        client: redisClient,
+        prefix: 'chat-session:',
+      }),
       secret: configService.getOrThrow<string>('SESSION_SECRET'),
       resave: false,
       saveUninitialized: false,
