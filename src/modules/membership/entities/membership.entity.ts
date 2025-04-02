@@ -5,8 +5,8 @@ import {
   ManyToOne,
   Property,
 } from '@mikro-orm/core';
-import { GroupEntity } from 'src/modules/group/entities/group.entity';
-import { UserEntity } from 'src/modules/user/entities/user.entity';
+import { GroupEntity } from '../../group/entities/group.entity';
+import { UserEntity } from '../../user/entities/user.entity';
 
 @Entity({ tableName: 'memberships' })
 export class MembershipEntity {

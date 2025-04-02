@@ -8,8 +8,8 @@ import {
   Property,
 } from '@mikro-orm/core';
 import { IsEmail } from 'class-validator';
-import { GroupEntity } from 'src/modules/group/entities/group.entity';
-import { MembershipEntity } from 'src/modules/membership/entities/membership.entity';
+import { GroupEntity } from '../../group/entities/group.entity';
+import { MembershipEntity } from '../../membership/entities/membership.entity';
 import { v4 as uuidv4 } from 'uuid';
 
 @Entity({ tableName: 'users' })
@@ -52,6 +52,7 @@ export class UserEntity {
   @ManyToMany({
     entity: () => GroupEntity,
     pivotEntity: () => MembershipEntity,
+    inversedBy: (e) => e.users,
   })
   groups = new Collection<GroupEntity>(this);
 }

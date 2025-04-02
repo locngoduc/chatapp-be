@@ -173,6 +173,81 @@
       "checks": [],
       "foreignKeys": {},
       "nativeEnums": {}
+    },
+    {
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "uuid"
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "uuid"
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamptz",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "length": 6,
+          "mappedType": "datetime"
+        }
+      },
+      "name": "memberships",
+      "schema": "public",
+      "indexes": [
+        {
+          "keyName": "memberships_pkey",
+          "columnNames": [
+            "user_id",
+            "group_id"
+          ],
+          "composite": true,
+          "constraint": true,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "memberships_user_id_foreign": {
+          "constraintName": "memberships_user_id_foreign",
+          "columnNames": [
+            "user_id"
+          ],
+          "localTableName": "public.memberships",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.users",
+          "updateRule": "cascade"
+        },
+        "memberships_group_id_foreign": {
+          "constraintName": "memberships_group_id_foreign",
+          "columnNames": [
+            "group_id"
+          ],
+          "localTableName": "public.memberships",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "public.groups",
+          "updateRule": "cascade"
+        }
+      },
+      "nativeEnums": {}
     }
   ],
   "nativeEnums": {}
