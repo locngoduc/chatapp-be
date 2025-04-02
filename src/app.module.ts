@@ -12,6 +12,7 @@ import { EnvConfig, envConfigParser } from './config/env.config';
 import { UsersModule } from './modules/user/user.module';
 import { LoggerModule } from 'nestjs-pino';
 import { SessionModule } from './modules/session/sesstion.module';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SessionModule } from './modules/session/sesstion.module';
     }),
     UsersModule,
     SessionModule,
+    PassportModule.register({ session: true }),
   ],
   controllers: [AppController],
   providers: [

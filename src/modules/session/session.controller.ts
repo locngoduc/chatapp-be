@@ -1,6 +1,18 @@
-import { Controller, Inject, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Inject,
+  Post,
+  Req,
+  Session,
+  UseGuards,
+} from '@nestjs/common';
 import { SessionService } from './session.sevice';
-import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
+import {
+  AuthenticateGuard,
+  LocalAuthGuard,
+} from 'src/shared/guards/local-auth.guards';
 
 @Controller({
   version: '1',
@@ -11,19 +23,20 @@ export class SessionController {
     @Inject('SESSION_SERVICE') private readonly sessionService: SessionService,
   ) {}
 
-  @UseGuards(AuthGuard('local'))
+  @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req) {}
+  async login() {}
 
-  //   @UseGuards(AuthGuard('local'))
-  //   @Post('login')
-  //   async login(@Request() req) {
-  //     return req.user;
-  //   }
+  @Get()
+  async getSession(@Session() session: Record<string, any>) {
+    console.log('session', session);
+    console.log(session.id);
+    return session;
+  }
 
-  //   @Get()
-  //   async getUser() {
-  //     const user = await this.sessionService.validateUser('e@gmail.com', '1');
-  //     return user;
-  //   }
+  @UseGuards(AuthenticateGuard)
+  @Get('status')
+  async getSessionStatus(@Req() req: Request) {
+    return req.user;
+  }
 }

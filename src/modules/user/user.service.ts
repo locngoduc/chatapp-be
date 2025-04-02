@@ -61,4 +61,11 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ email });
     return user;
   }
+
+  async findUserById(id: string): Promise<UserEntity | null> {
+    // const user = await this.usersRepository.findOne({ id });
+    const em = this.entityManager.fork();
+    const user = await em.findOne(UserEntity, { id });
+    return user;
+  }
 }

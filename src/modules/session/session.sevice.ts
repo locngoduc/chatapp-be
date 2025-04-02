@@ -12,20 +12,8 @@ export class SessionService {
     console.log('Inside validate User');
     const userDB = await this.userService.findUserByEmail(email);
     if (userDB && (await argon2.verify(userDB.hashedPassword, password))) {
-      console.log('Check: ', argon2.verify(userDB.hashedPassword, password));
-      console.log('User validation succes!');
       return userDB;
     }
-    console.log('User validation failed!');
     return null;
   }
-
-  // async validateUser(email: string, pass: string): Promise<UserEntity | null> {
-  //   console.log('Inside validate User Service');
-  //   const user = await this.userService.findUserByEmail(email);
-  //   if (user) {
-  //     return user;
-  //   }
-  //   return null;
-  // }
 }

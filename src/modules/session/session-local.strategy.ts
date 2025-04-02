@@ -12,9 +12,6 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(email: string, password: string) {
-    console.log('Inside LocalStrategy.validate');
-    console.log(email);
-    console.log(password);
     const user = await this.sessionService.validateUser(email, password);
     if (!user) {
       // return err(new UnauthorizedError('Invalid credentials'));
@@ -22,13 +19,4 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     }
     return user;
   }
-
-  // async validate(email: string, password: string): Promise<any> {
-  //   console.log('Inside LocalStrategy validate method');
-  //   const user = await this.sessionService.validateUser(email, password);
-  //   if (!user) {
-  //     throw new UnauthorizedException();
-  //   }
-  //   return user;
-  // }
 }

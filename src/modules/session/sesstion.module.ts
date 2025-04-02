@@ -4,11 +4,11 @@ import { SessionService } from './session.sevice';
 import { UsersService } from '../user/user.service';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { UserEntity } from '../user/entities/user.entity';
-import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './session-local.strategy';
+import { SessionSerializer } from './session.serializer';
 
 @Module({
-  imports: [MikroOrmModule.forFeature([UserEntity]), PassportModule],
+  imports: [MikroOrmModule.forFeature([UserEntity])],
   controllers: [SessionController],
   providers: [
     {
@@ -20,6 +20,7 @@ import { LocalStrategy } from './session-local.strategy';
       useClass: UsersService,
     },
     LocalStrategy,
+    SessionSerializer,
   ],
 })
 export class SessionModule {}
