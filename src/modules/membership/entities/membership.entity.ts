@@ -1,10 +1,4 @@
-import {
-  BeforeCreate,
-  Entity,
-  ManyToMany,
-  ManyToOne,
-  Property,
-} from '@mikro-orm/core';
+import { BeforeCreate, Entity, ManyToOne, Property } from '@mikro-orm/core';
 import { GroupEntity } from '../../group/entities/group.entity';
 import { UserEntity } from '../../user/entities/user.entity';
 

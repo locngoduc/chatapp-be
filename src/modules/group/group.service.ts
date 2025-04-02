@@ -28,6 +28,8 @@ export class GroupService {
       logoImage: createGroupDto.logoImage,
     });
 
+    this.entityManager.persistAndFlush(group);
+
     return ok(
       new SuccessResponse<GroupEntity>('Create group successfully!', group),
     );

@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
 export const CreateMessageRequestSchema = z.object({
   authorId: z.string().nonempty('Author ID is required'),
@@ -13,6 +13,10 @@ export const CreateMessageRequestSchema = z.object({
       }),
     )
     .optional(),
+  createdAt: z
+    .date()
+    .optional()
+    .default(() => new Date()),
 });
 
 export class CreateMessageRequestDto extends createZodDto(
