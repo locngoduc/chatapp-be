@@ -56,4 +56,9 @@ export class UsersService {
     console.log('User created event:', user);
     // Handle the event, e.g., send a welcome email
   }
+
+  async findUserByEmail(email: string): Promise<UserEntity | null> {
+    const user = await this.usersRepository.findOne({ email });
+    return user;
+  }
 }

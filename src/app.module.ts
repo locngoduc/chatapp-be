@@ -11,6 +11,7 @@ import ormConfig from './config/mikro-orm.config';
 import { EnvConfig, envConfigParser } from './config/env.config';
 import { UsersModule } from './modules/user/user.module';
 import { LoggerModule } from 'nestjs-pino';
+import { SessionModule } from './modules/session/sesstion.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { LoggerModule } from 'nestjs-pino';
       },
     }),
     UsersModule,
+    SessionModule,
   ],
   controllers: [AppController],
   providers: [
@@ -39,6 +41,13 @@ import { LoggerModule } from 'nestjs-pino';
     {
       provide: APP_PIPE,
       useClass: ZodValidationPipe,
+    },
+    {
+      provide: 'APP_NAME',
+      useFactory: (configService: ConfigService) => {
+        return configService.get('INSTANCE_NAME');
+      },
+      inject: [ConfigService],
     },
   ],
 })

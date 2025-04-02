@@ -1,0 +1,31 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { UsersService } from '../user/user.service';
+import * as argon2 from 'argon2';
+
+@Injectable()
+export class SessionService {
+  constructor(
+    @Inject('USER_SERVICE') private readonly userService: UsersService,
+  ) {}
+
+  async validateUser(email: string, password: string) {
+    console.log('Inside validate User');
+    const userDB = await this.userService.findUserByEmail(email);
+    if (userDB && (await argon2.verify(userDB.hashedPassword, password))) {
+      console.log('Check: ', argon2.verify(userDB.hashedPassword, password));
+      console.log('User validation succes!');
+      return userDB;
+    }
+    console.log('User validation failed!');
+    return null;
+  }
+
+  // async validateUser(email: string, pass: string): Promise<UserEntity | null> {
+  //   console.log('Inside validate User Service');
+  //   const user = await this.userService.findUserByEmail(email);
+  //   if (user) {
+  //     return user;
+  //   }
+  //   return null;
+  // }
+}
