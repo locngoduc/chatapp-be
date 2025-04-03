@@ -13,7 +13,7 @@ import {
   CreateMessageRequestSchema,
 } from './dtos/create-message-request.dto';
 import { MessageService } from './message.service';
-import { MessageZodSchema } from './schemas/message.schemas';
+import { Message, MessageZodSchema } from './schemas/message.schemas';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MessageGateway
@@ -37,25 +37,21 @@ export class MessageGateway
 
     //Handle push message to RabbitMQ
 
+    //Sample for one instance
+    this.server.to(data.groupId).emit('receiveMessage', data);
+
     return 'Hello world';
   }
 
   @SubscribeMessage('receiveMessage')
   handleReceiveMessage(
-    @MessageBody(new ZodValidationPipe(MessageZodSchema))
+    @MessageBody(new ZodValidationPipe(CreateMessageRequestSchema))
     data: CreateMessageRequestDto,
   ): string {
     //Handle error for invalid data like authorId and groupId
 
-    //Handle send message to group
-    this.server.emit(data.groupId, {
-      authorId: data.authorId,
-      groupId: data.groupId,
-      content: data.content,
-      attachments: data.attachments,
-      createdAt: data.createdAt,
-    });
-
+    //Handle send message to group - sample waiting for rabbitMQ and redis from tth
+    this.server.to(data.groupId).emit('haveMessage', data);
     //Using redis service to take all server instance in group
 
     //Handle push message to RabbitMQ

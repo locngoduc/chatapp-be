@@ -32,7 +32,6 @@ export class MembershipGateway
   ) {
     return await RequestContext.create(this.orm.em, async () => {
       // validate the data
-
       const { userId, groupId } = createMembershipDto;
 
       const membership =
