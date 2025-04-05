@@ -16,7 +16,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import mongooseConfig, { MONGO_URI } from './config/mongoose.config';
 import { MessageModule } from './modules/message/message.module';
 import { GroupModule } from './modules/group/group.module';
-import { MembershipModule } from './modules/membership/membership.module';
+import { UserGroupModule } from './modules/user_group/user_group.module';
 
 @Module({
   imports: [
@@ -43,7 +43,7 @@ import { MembershipModule } from './modules/membership/membership.module';
     UsersModule,
     MessageModule,
     GroupModule,
-    MembershipModule,
+    UserGroupModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,9 +1,9 @@
-import { BeforeCreate, Entity, ManyToOne, Property } from '@mikro-orm/core';
+import { Entity, ManyToOne, Property } from '@mikro-orm/core';
 import { GroupEntity } from '../../group/entities/group.entity';
 import { UserEntity } from '../../user/entities/user.entity';
 
-@Entity({ tableName: 'memberships' })
-export class MembershipEntity {
+@Entity({ tableName: 'user_groups' })
+export class UserGroupEntity {
   @ManyToOne({ primary: true })
   user: UserEntity;
 

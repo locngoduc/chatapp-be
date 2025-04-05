@@ -7,7 +7,7 @@ import {
   PrimaryKey,
   Property,
 } from '@mikro-orm/core';
-import { MembershipEntity } from '../../membership/entities/membership.entity';
+import { UserGroupEntity } from '../../user_group/entities/user_group.entity';
 import { UserEntity } from '../../user/entities/user.entity';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -24,7 +24,7 @@ export class GroupEntity {
 
   @ManyToMany({
     entity: () => UserEntity,
-    pivotEntity: () => MembershipEntity,
+    pivotEntity: () => UserGroupEntity,
     mappedBy: (e) => e.groups,
   })
   users = new Collection<UserEntity>(this);

@@ -6,14 +6,14 @@ import { DatabaseError } from 'src/shared/errors/database.error';
 import { EntityNotFoundError } from 'src/shared/errors/entity-not-found.error';
 import { GroupEntity } from '../group/entities/group.entity';
 import { UserEntity } from '../user/entities/user.entity';
-import { CreateMembershipRequestDto } from './dto/create-membership.dto';
-import { MembershipEntity } from './entities/membership.entity';
+import { CreateUserGroupRequestDto } from './dto/create-user_group.dto';
+import { UserGroupEntity } from './entities/user_group.entity';
 
 @Injectable()
-export class MembershipService {
+export class UserGroupService {
   constructor(
-    @InjectRepository(MembershipEntity)
-    private readonly membershipRepository: EntityRepository<MembershipEntity>,
+    @InjectRepository(UserGroupEntity)
+    private readonly userGroupRepository: EntityRepository<UserGroupEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: EntityRepository<UserEntity>,
     @InjectRepository(GroupEntity)
@@ -23,9 +23,9 @@ export class MembershipService {
 
   // Pagination added later
 
-  public async createMembership(
-    createMembershipDto: CreateMembershipRequestDto,
-  ): Promise<Result<MembershipEntity, DatabaseError | EntityNotFoundError>> {
+  public async createUserGroup(
+    createMembershipDto: CreateUserGroupRequestDto,
+  ): Promise<Result<UserGroupEntity, DatabaseError | EntityNotFoundError>> {
     const { userId, groupId } = createMembershipDto;
 
     const user = await this.userRepository.findOne({ id: userId });
@@ -39,16 +39,16 @@ export class MembershipService {
     }
 
     try {
-      const membership = this.membershipRepository.create({
+      const userGroup = this.userGroupRepository.create({
         user,
         group,
       });
 
-      await this.entityManager.persistAndFlush(membership);
+      await this.entityManager.persistAndFlush(userGroup);
 
-      return ok(membership);
+      return ok(userGroup);
     } catch (error) {
-      return err(new DatabaseError('Error during membership creation'));
+      return err(new DatabaseError('Error during userGroup creation'));
     }
   }
 
@@ -56,20 +56,20 @@ export class MembershipService {
     userId: string,
     groupId: string,
   ): Promise<Result<null, DatabaseError | EntityNotFoundError>> {
-    const membership = await this.membershipRepository.findOne({
+    const userGroup = await this.userGroupRepository.findOne({
       user: userId,
       group: groupId,
     });
 
-    if (!membership) {
-      return err(new EntityNotFoundError('Membership', userId + groupId));
+    if (!userGroup) {
+      return err(new EntityNotFoundError('UserGroup', userId + groupId));
     }
 
     try {
-      await this.entityManager.removeAndFlush(membership);
+      await this.entityManager.removeAndFlush(userGroup);
       return ok(null);
     } catch (error) {
-      return err(new DatabaseError('Error during membership deletion'));
+      return err(new DatabaseError('Error during userGroup deletion'));
     }
   }
 

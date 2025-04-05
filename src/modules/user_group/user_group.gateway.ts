@@ -10,31 +10,31 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { SuccessResponse } from 'src/shared/classes/wrapper';
-import { CreateMembershipRequestDto } from './dto/create-membership.dto';
-import { MembershipEntity } from './entities/membership.entity';
-import { MembershipService } from './membership.service';
+import { CreateUserGroupRequestDto } from './dto/create-user_group.dto';
+import { UserGroupEntity } from './entities/user_group.entity';
+import { UserGroupService } from './user_group.service';
 @WebSocketGateway()
-export class MembershipGateway
+export class UserGroupGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer() server: Server;
 
   constructor(
-    private readonly membershipService: MembershipService,
+    private readonly userGroupService: UserGroupService,
     private readonly orm: MikroORM,
   ) {}
 
-  @SubscribeMessage('createMembership')
-  async handleCreateMembership(
-    @MessageBody() createMembershipDto: CreateMembershipRequestDto,
+  @SubscribeMessage('createUserGroup')
+  async handleCreateUserGroup(
+    @MessageBody() createUserGroupDto: CreateUserGroupRequestDto,
   ) {
     return await RequestContext.create(this.orm.em, async () => {
       const result =
-        await this.membershipService.createMembership(createMembershipDto);
+        await this.userGroupService.createUserGroup(createUserGroupDto);
 
       if (result.isOk()) {
-        return new SuccessResponse<MembershipEntity>(
-          'Membership created successfully!',
+        return new SuccessResponse<UserGroupEntity>(
+          'UserGroup created successfully!',
           result.value,
         );
       } else {
@@ -43,18 +43,18 @@ export class MembershipGateway
     });
   }
 
-  @SubscribeMessage('deleteMembership')
-  async handleDeleteMembership(
+  @SubscribeMessage('deleteUserGroup')
+  async handleDeleteUserGroup(
     @MessageBody() data: { userId: string; groupId: string },
   ) {
     return await RequestContext.create(this.orm.em, async () => {
-      const result = await this.membershipService.delete(
+      const result = await this.userGroupService.delete(
         data.userId,
         data.groupId,
       );
 
       if (result.isOk()) {
-        return new SuccessResponse('Membership deleted successfully!');
+        return new SuccessResponse('UserGroup deleted successfully!');
       } else {
         return result.error.toJSON();
       }
@@ -69,7 +69,7 @@ export class MembershipGateway
     //     client.disconnect();
     //     return;
     //   }
-    //   const result = await this.membershipService.getGroupsByUserId(userId);
+    //   const result = await this.userGroupService.getGroupsByUserId(userId);
     //   if (result.isErr()) {
     //     client.disconnect();
     //     return;
