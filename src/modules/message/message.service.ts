@@ -1,15 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Message, MessageDocument } from './schemas/message.schemas';
-import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
 import { err, ok, Result } from 'neverthrow';
 import {
   CursorPaginationWrapper,
   SuccessResponse,
 } from 'src/shared/classes/wrapper';
-import { MessageError } from './errors/base-message.error';
+import { DatabaseError } from 'src/shared/errors/database.error';
+import { EntityNotFoundError } from 'src/shared/errors/entity-not-found.error';
+import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
 import { UpdateMessageRequestDto } from './dtos/update-message-request.dto';
+import { Message, MessageDocument } from './schemas/message.schemas';
+
+type QueryType = {
+  groupId: string;
+  createdAt?: { $lt: Date };
+};
+
 @Injectable()
 export class MessageService {
   constructor(
@@ -17,28 +24,36 @@ export class MessageService {
     private readonly messageModel: Model<MessageDocument>,
   ) {}
 
-  async createMessage(messageData: CreateMessageRequestDto): Promise<Message> {
-    const message = new this.messageModel(messageData);
-    return message.save();
+  async createMessage(
+    messageData: CreateMessageRequestDto,
+  ): Promise<Result<Message, DatabaseError>> {
+    //Handle error for groupId
+    //Handle error for authorId
+
+    try {
+      const message = await this.messageModel.create(messageData);
+      return ok(message);
+    } catch (error) {
+      return err(new DatabaseError('Error creating message'));
+    }
   }
 
   async getMessagesByGroupId(
     groupId: string,
     cursor?: string,
     limit: number = 1,
-  ): Promise<Result<CursorPaginationWrapper<Message[]>, MessageError>> {
+  ): Promise<Result<CursorPaginationWrapper<Message>, DatabaseError>> {
     const numericLimit = Number(limit);
 
+    const query: QueryType = { groupId };
+
+    if (cursor) {
+      query.createdAt = { $lt: new Date(cursor) };
+    }
+
+    //Handle error for groupId
+    //Check authentication and authorization
     try {
-      const query: any = { groupId };
-
-      if (cursor) {
-        query.createdAt = { $lt: new Date(cursor) };
-      }
-
-      //Handle error for groupId
-      //Check authentication and authorization
-
       const messages = await this.messageModel
         .find(query)
         .sort({ createdAt: -1 })
@@ -56,42 +71,35 @@ export class MessageService {
           : undefined;
 
       return ok(
-        new CursorPaginationWrapper<Message[]>(
-          'success',
-          messages,
-          nextCursor,
-          hasMore,
-        ),
+        new CursorPaginationWrapper<Message>(nextCursor, hasMore, messages),
       );
     } catch (error) {
-      console.error(error);
-      return err(new MessageError('Unexpected error'));
+      return err(new DatabaseError('Unexpected error'));
     }
   }
 
   async deleteMessage(
     messageId: string,
-  ): Promise<Result<SuccessResponse<string>, MessageError>> {
+  ): Promise<Result<SuccessResponse<null>, DatabaseError>> {
     try {
       const deletedMessage = await this.messageModel
         .findByIdAndDelete(messageId)
         .exec();
 
       if (!deletedMessage) {
-        return err(new MessageError('Message not found'));
+        return err(new EntityNotFoundError('Message', messageId));
       }
 
-      return ok(new SuccessResponse('Message deleted successfully'));
+      return ok(null);
     } catch (error) {
-      console.error(error);
-      return err(new MessageError('Unexpected error'));
+      return err(new DatabaseError('Unexpected error'));
     }
   }
 
   async updateMessageById(
     messageId: string,
     messageData: UpdateMessageRequestDto,
-  ): Promise<Result<SuccessResponse<Message>, MessageError>> {
+  ): Promise<Result<Message, EntityNotFoundError | DatabaseError>> {
     try {
       const updatedMessage = await this.messageModel
         .findByIdAndUpdate(
@@ -102,18 +110,12 @@ export class MessageService {
         .exec();
 
       if (!updatedMessage) {
-        return err(new MessageError('Message not found'));
+        return err(new EntityNotFoundError('Message', messageId));
       }
 
-      return ok(
-        new SuccessResponse<Message>(
-          'Update message successfully',
-          updatedMessage,
-        ),
-      );
+      return ok(updatedMessage);
     } catch (error) {
-      console.error(error);
-      return err(new MessageError('Unexpected error'));
+      return err(new DatabaseError('Unexpected error'));
     }
   }
 }

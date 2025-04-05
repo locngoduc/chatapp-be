@@ -8,12 +8,13 @@ import {
 } from '@nestjs/websockets';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Server, Socket } from 'socket.io';
+import { SuccessResponse } from 'src/shared/classes/wrapper';
 import {
   CreateMessageRequestDto,
   CreateMessageRequestSchema,
 } from './dtos/create-message-request.dto';
 import { MessageService } from './message.service';
-import { Message, MessageZodSchema } from './schemas/message.schemas';
+import { Message } from './schemas/message.schemas';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MessageGateway
@@ -27,11 +28,11 @@ export class MessageGateway
   async handleSendMessage(
     @MessageBody(new ZodValidationPipe(CreateMessageRequestSchema))
     data: CreateMessageRequestDto,
-  ): Promise<string> {
+  ) {
     //Handle error for invalid data like authorId and groupId
 
     //Handle save message to db
-    const message = await this.messageService.createMessage(data);
+    const result = await this.messageService.createMessage(data);
 
     //Using redis service to take all server instance in group
 
@@ -40,7 +41,14 @@ export class MessageGateway
     //Sample for one instance
     this.server.to(data.groupId).emit('receiveMessage', data);
 
-    return 'Hello world';
+    if (result.isOk()) {
+      return new SuccessResponse<Message>(
+        'Message created successfully!',
+        result.value,
+      );
+    } else {
+      return result.error.toJSON();
+    }
   }
 
   @SubscribeMessage('receiveMessage')
@@ -50,19 +58,13 @@ export class MessageGateway
   ): string {
     //Handle error for invalid data like authorId and groupId
 
-    //Handle send message to group - sample waiting for rabbitMQ and redis from tth
-    this.server.to(data.groupId).emit('haveMessage', data);
+    //Handle send message to group - waiting for rabbitMQ and redis from tth
+
     //Using redis service to take all server instance in group
 
     //Handle push message to RabbitMQ
 
     return 'Hello world';
-  }
-
-  @SubscribeMessage('test')
-  handleTest(client: Socket, payload: any): string {
-    client.emit('test: ', `Server received: ${payload}`);
-    return 'Hello world!';
   }
 
   handleConnection(client: Socket) {

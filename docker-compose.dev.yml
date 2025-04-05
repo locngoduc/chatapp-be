@@ -91,7 +91,8 @@ services:
         MONGO_INITDB_DATABASE: ${MONGO_DB}
       volumes:
         - chat-mongo-data:/data/db
-
+      networks:
+        - chat_network
 networks:
   chat_network:
     driver: bridge

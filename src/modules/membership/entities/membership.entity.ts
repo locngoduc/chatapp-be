@@ -10,11 +10,6 @@ export class MembershipEntity {
   @ManyToOne({ primary: true })
   group: GroupEntity;
 
-  @Property({ type: 'Date' })
-  lastSeenAt!: Date;
-
-  @BeforeCreate()
-  setLastSeenAt() {
-    this.lastSeenAt = new Date();
-  }
+  @Property({ type: 'Date', nullable: true })
+  lastSeenAt: Date;
 }

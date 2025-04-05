@@ -1,42 +1,31 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
-import { GroupService } from './group.service';
+import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { CreateGroupRequestDto } from './dto/create-group.dto';
-import { UpdateGroupDto } from './dto/update-group.dto';
-
+import { GroupService } from './group.service';
+import { SuccessResponse } from 'src/shared/classes/wrapper';
+import { GroupEntity } from './entities/group.entity';
 @Controller('group')
 export class GroupController {
   constructor(private readonly groupService: GroupService) {}
 
   @Post()
-  create(@Body() createGroupDto: CreateGroupRequestDto) {
-    return this.groupService.create(createGroupDto);
-  }
+  async create(
+    @Body() createGroupDto: CreateGroupRequestDto,
+    @Res() res: Response,
+  ) {
+    const result = await this.groupService.create(createGroupDto);
 
-  @Get()
-  findAll() {
-    return this.groupService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.groupService.findOne(id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateGroupDto: UpdateGroupDto) {
-    return this.groupService.update(+id, updateGroupDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.groupService.remove(id);
+    if (result.isOk()) {
+      return res
+        .status(HttpStatus.CREATED)
+        .json(
+          new SuccessResponse<GroupEntity>(
+            'Group created successfully!',
+            result.value,
+          ),
+        );
+    } else {
+      return result.error.createResponse(res);
+    }
   }
 }

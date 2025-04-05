@@ -1,17 +1,15 @@
-import { SuccessResponse } from './success-response-wrapper';
-
-export class CursorPaginationWrapper<T> extends SuccessResponse<T> {
+export class CursorPaginationWrapper<T> {
   meta: {
     nextCursor: string;
     hasMore: boolean;
+    result: T[];
   };
 
-  constructor(message: string, data: T, cursor: string, hasMore: boolean) {
-    super(message, data);
-
+  constructor(cursor: string, hasMore: boolean, data: T[]) {
     this.meta = {
       nextCursor: cursor,
       hasMore: hasMore,
+      result: data,
     };
   }
 }
