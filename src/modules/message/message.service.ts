@@ -27,6 +27,8 @@ export class MessageService {
   async createMessage(
     messageData: CreateMessageRequestDto,
   ): Promise<Result<Message, DatabaseError>> {
+    //Take authorId from socket or auth context
+
     //Handle error for groupId
     //Handle error for authorId
 
