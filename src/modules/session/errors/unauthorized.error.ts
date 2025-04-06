@@ -1,7 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
-import { UserError } from 'src/modules/user/errors/base-user.error';
+import { SessionError } from './base-session.error';
 
-export class UnauthorizedError extends UserError {
+export class UnauthorizedError extends SessionError {
   constructor(message: string = 'Unauthorized access') {
     super(message);
     this.name = 'UnauthorizedError';

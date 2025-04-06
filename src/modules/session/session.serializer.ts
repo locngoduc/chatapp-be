@@ -14,7 +14,6 @@ export class SessionSerializer extends PassportSerializer {
     user: UserEntity,
     done: (err: Error | null, user: UserEntity) => void,
   ) {
-    console.log('serializeUser', user);
     done(null, user);
   }
 
@@ -22,7 +21,6 @@ export class SessionSerializer extends PassportSerializer {
     user: UserEntity,
     done: (err: Error | null, user: UserEntity) => void,
   ) {
-    console.log('deserializeUser', user);
     const userDB = await this.userService.findUserById(user.id);
     return userDB ? done(null, userDB) : done(null, null);
   }
