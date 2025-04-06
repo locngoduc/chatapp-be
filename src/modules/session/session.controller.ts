@@ -50,8 +50,17 @@ export class SessionController {
         throw new InternalServerErrorException(err);
         // return err();
       }
-      console.log('User logged out');
-      return res.json(new SuccessResponse('Successfully logged out', null));
+
+      req.session.destroy((err) => {
+        if (err) {
+          throw new InternalServerErrorException(err);
+        }
+
+        res.clearCookie('chat-session');
+
+        console.log('User logged out');
+        return res.json(new SuccessResponse('Successfully logged out', null));
+      });
     });
   }
 }
