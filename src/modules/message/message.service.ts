@@ -32,8 +32,12 @@ export class MessageService {
     //Handle error for groupId
     //Handle error for authorId
 
+    const authorId = '6779d50d-4baf-41cc-814d-c35942225d6c'; // Placeholder for authorId
     try {
-      const message = await this.messageModel.create(messageData);
+      const message = await this.messageModel.create({
+        authorId,
+        ...messageData,
+      });
       return ok(message);
     } catch (error) {
       return err(new DatabaseError('Error creating message'));
@@ -76,6 +80,7 @@ export class MessageService {
         new CursorPaginationWrapper<Message>(nextCursor, hasMore, messages),
       );
     } catch (error) {
+      console.error('Error fetching messages:', error);
       return err(new DatabaseError('Unexpected error'));
     }
   }

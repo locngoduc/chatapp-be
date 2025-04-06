@@ -29,7 +29,7 @@ export class MessageGateway
     @MessageBody(new ZodValidationPipe(CreateMessageRequestSchema))
     data: CreateMessageRequestDto,
   ) {
-    //Handle error for invalid data like authorId and groupId
+    //Handle error for invalid data like groupId
 
     //Handle save message to db
     const result = await this.messageService.createMessage(data);

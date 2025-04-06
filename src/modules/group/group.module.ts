@@ -1,11 +1,17 @@
-import { Module } from '@nestjs/common';
-import { GroupService } from './group.service';
-import { GroupController } from './group.controller';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
+import { Module } from '@nestjs/common';
+import { MessageModule } from '../message/message.module';
+import { UserEntity } from '../user/entities/user.entity';
+import { UserGroupEntity } from '../user_group/entities/user_group.entity';
 import { GroupEntity } from './entities/group.entity';
+import { GroupController } from './group.controller';
+import { GroupService } from './group.service';
 
 @Module({
-  imports: [MikroOrmModule.forFeature([GroupEntity])],
+  imports: [
+    MikroOrmModule.forFeature([GroupEntity, UserEntity, UserGroupEntity]),
+    MessageModule,
+  ],
   controllers: [GroupController],
   providers: [GroupService],
 })

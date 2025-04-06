@@ -1,14 +1,13 @@
 import { SuccessResponse } from './success-response-wrapper';
 
 export class OffsetPaginationWrapper<T> extends SuccessResponse<T> {
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-    nextPage?: number | null;
-    prevPage?: number | null;
-  };
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  nextPage?: number | null;
+  prevPage?: number | null;
+  result: T[];
 
   constructor(
     message: string,
@@ -16,18 +15,18 @@ export class OffsetPaginationWrapper<T> extends SuccessResponse<T> {
     total: number,
     page: number,
     limit: number,
+    result: T[],
   ) {
     super(message, data);
 
     const totalPages = Math.ceil(total / limit);
 
-    this.meta = {
-      total,
-      page,
-      limit,
-      totalPages,
-      nextPage: page < totalPages ? page + 1 : null,
-      prevPage: page > 1 ? page - 1 : null,
-    };
+    this.totalPages = totalPages;
+    this.total = total;
+    this.page = page;
+    this.limit = limit;
+    this.result = result;
+    this.nextPage = page < totalPages ? page + 1 : null;
+    this.prevPage = page > 1 ? page - 1 : null;
   }
 }

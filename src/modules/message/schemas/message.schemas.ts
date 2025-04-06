@@ -8,10 +8,6 @@ type Attachment = {
 };
 
 @Schema({
-  timestamps: {
-    createdAt: 'create_at',
-    updatedAt: 'updated_at',
-  },
   collection: 'messages',
 })
 export class Message {
@@ -30,6 +26,18 @@ export class Message {
 
   @Prop({ type: [Object] })
   attachments?: Attachment[];
+
+  @Prop({
+    name: 'created_at',
+    default: () => new Date(),
+  })
+  createdAt: Date;
+
+  @Prop({
+    name: 'updated_at',
+    default: () => new Date(),
+  })
+  updatedAt: Date;
 }
 
 export type MessageDocument = HydratedDocument<Message> & {
@@ -37,27 +45,3 @@ export type MessageDocument = HydratedDocument<Message> & {
   updatedAt: Date;
 };
 export const MessageSchema = SchemaFactory.createForClass(Message);
-
-export const MessageZodSchema = z.object({
-  authorId: z.string().nonempty('Author ID is required'),
-  groupId: z.string().nonempty('Group ID is required'),
-  content: z.string().nonempty('Content is required'),
-  attachments: z
-    .array(
-      z.object({
-        url: z.string().url('Invalid URL').nonempty('URL is required'),
-        size: z.number().positive('Size must be a positive number'),
-      }),
-    )
-    .optional(),
-  createdAt: z
-    .date()
-    .optional()
-    .default(() => new Date())
-    .transform((date) => date.toISOString()),
-  updatedAt: z
-    .date()
-    .optional()
-    .default(() => new Date())
-    .transform((date) => date.toISOString()),
-});
