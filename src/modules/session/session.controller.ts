@@ -2,7 +2,6 @@ import {
   Controller,
   Delete,
   Get,
-  Inject,
   InternalServerErrorException,
   Post,
   Req,
@@ -21,14 +20,14 @@ import { SuccessResponse } from 'src/shared/classes/sussess.response.class';
   path: 'session',
 })
 export class SessionController {
-  constructor(
-    @Inject('SESSION_SERVICE') private readonly sessionService: SessionService,
-  ) {}
+  constructor(private readonly sessionService: SessionService) {}
 
   @UseGuards(LocalAuthGuard)
   @Post()
   async login(@AuthUser() user) {
-    const { hashedPassword, ...rest } = user;
+    const userValue = user?.value || user;
+    const { hashedPassword, ...rest } = userValue;
+    console.log('User:', user);
     return new SuccessResponse('User successfully logged in', rest);
     // if (res.isOk()) return res.status(HttpStatus.OK).json(rest);
     // else return res.error.createResponse(res);
@@ -37,6 +36,7 @@ export class SessionController {
   @UseGuards(AuthenticateGuard)
   @Get()
   async getSession(@AuthUser() user) {
+    console.log('User:', user);
     const { hashedPassword, ...rest } = user;
     // return res.status(HttpStatus.OK).json(rest);
     return new SuccessResponse('Session info queried successfully', rest);

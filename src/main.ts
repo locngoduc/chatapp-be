@@ -22,13 +22,15 @@ async function bootstrap() {
 
   // await redisClient.connect();
 
+  const redisStore = new RedisStore({
+    client: redisClient,
+    prefix: 'chat-session:',
+  });
+
   app.use(
     session({
       name: 'chat-session',
-      store: new (RedisStore as any)({
-        client: redisClient,
-        prefix: 'chat-session:',
-      }),
+      store: redisStore,
       secret: configService.getOrThrow<string>('SESSION_SECRET'),
       resave: false,
       saveUninitialized: false,

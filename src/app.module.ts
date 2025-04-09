@@ -11,7 +11,7 @@ import ormConfig from './config/mikro-orm.config';
 import { EnvConfig, envConfigParser } from './config/env.config';
 import { UsersModule } from './modules/user/user.module';
 import { LoggerModule } from 'nestjs-pino';
-import { SessionModule } from './modules/session/sesstion.module';
+import { SessionModule } from './modules/session/session.module';
 import { PassportModule } from '@nestjs/passport';
 
 @Module({

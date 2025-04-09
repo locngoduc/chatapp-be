@@ -57,15 +57,21 @@ export class UsersService {
     // Handle the event, e.g., send a welcome email
   }
 
-  async findUserByEmail(email: string): Promise<UserEntity | null> {
+  async findUserByEmail(
+    email: string,
+  ): Promise<Result<UserEntity, UserError | DatabaseError>> {
     const user = await this.usersRepository.findOne({ email });
-    return user;
+    if (user) return ok(user);
+    else return err(new UserError('User not found'));
   }
 
-  async findUserById(id: string): Promise<UserEntity | null> {
+  async findUserById(
+    id: string,
+  ): Promise<Result<UserEntity, UserError | DatabaseError>> {
     // const user = await this.usersRepository.findOne({ id });
     const em = this.entityManager.fork();
     const user = await em.findOne(UserEntity, { id });
-    return user;
+    if (user) return ok(user);
+    else return err(new UserError('User not found'));
   }
 }
