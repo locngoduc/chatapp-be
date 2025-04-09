@@ -13,6 +13,7 @@ import { UsersModule } from './modules/user/user.module';
 import { LoggerModule } from 'nestjs-pino';
 import { SessionModule } from './modules/session/session.module';
 import { PassportModule } from '@nestjs/passport';
+import { GatewayModule } from './modules/gateways/gateway.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { PassportModule } from '@nestjs/passport';
     UsersModule,
     SessionModule,
     PassportModule.register({ session: true }),
+    GatewayModule,
   ],
   controllers: [AppController],
   providers: [
