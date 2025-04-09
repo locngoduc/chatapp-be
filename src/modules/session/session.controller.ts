@@ -27,7 +27,6 @@ export class SessionController {
   async login(@AuthUser() user) {
     const userValue = user?.value || user;
     const { hashedPassword, ...rest } = userValue;
-    console.log('User:', user);
     return new SuccessResponse('User successfully logged in', rest);
     // if (res.isOk()) return res.status(HttpStatus.OK).json(rest);
     // else return res.error.createResponse(res);
@@ -36,7 +35,6 @@ export class SessionController {
   @UseGuards(AuthenticateGuard)
   @Get()
   async getSession(@AuthUser() user) {
-    console.log('User:', user);
     const { hashedPassword, ...rest } = user;
     // return res.status(HttpStatus.OK).json(rest);
     return new SuccessResponse('Session info queried successfully', rest);
@@ -58,7 +56,6 @@ export class SessionController {
 
         res.clearCookie('chat-session');
 
-        console.log('User logged out');
         return res.json(new SuccessResponse('Successfully logged out', null));
       });
     });

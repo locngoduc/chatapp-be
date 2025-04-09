@@ -1,7 +1,9 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import {
+  CreateRequestContext,
   EntityManager,
   EntityRepository,
+  MikroORM,
   Transactional,
 } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
@@ -21,6 +23,7 @@ export class UsersService {
     private readonly usersRepository: EntityRepository<UserEntity>,
     private readonly entityManager: EntityManager,
     private readonly eventEmitter: EventEmitter2,
+    private readonly orm: MikroORM,
   ) {}
 
   @Transactional()
@@ -65,12 +68,13 @@ export class UsersService {
     else return err(new UserError('User not found'));
   }
 
+  @CreateRequestContext()
   async findUserById(
     id: string,
   ): Promise<Result<UserEntity, UserError | DatabaseError>> {
     // const user = await this.usersRepository.findOne({ id });
-    const em = this.entityManager.fork();
-    const user = await em.findOne(UserEntity, { id });
+    // const em = this.entityManager.fork();
+    const user = await this.usersRepository.findOne({ id });
     if (user) return ok(user);
     else return err(new UserError('User not found'));
   }
