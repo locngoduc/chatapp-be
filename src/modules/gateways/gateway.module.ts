@@ -3,5 +3,6 @@ import { MyGateway } from './gateway';
 
 @Module({
   providers: [MyGateway],
+  exports: [MyGateway],
 })
 export class GatewayModule {}
