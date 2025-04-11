@@ -1,18 +1,33 @@
-import { FileErrorResponseDto } from './dtos/file-error-response.dto';
-import { FileOptionsDto } from './dtos/file-options.dto';
-import { FileSuccessResponseDto } from './dtos/file-success-response.dto';
+import { FileUploadOptions } from './configs/file-upload-options';
+import { FileUploadResult } from './dtos/file-upload-result.dto';
+import { FileUploadError } from './dtos/file-upload-error.dto';
+import { Result } from 'neverthrow';
+import { GenerateUrlDto } from './dtos/generate-url.dto';
 
 export interface IFilesService {
-  uploadFile(
+  uploadImage(
     file: Express.Multer.File,
-    options?: FileOptionsDto,
-  ): Promise<FileSuccessResponseDto | FileErrorResponseDto>;
+    options?: FileUploadOptions,
+  ): Promise<Result<FileUploadResult, FileUploadError>>;
+
+  uploadVideo(
+    file: Express.Multer.File,
+    options?: FileUploadOptions,
+  ): Promise<Result<FileUploadResult, FileUploadError>>;
+
+  uploadGenericFile(
+    file: Express.Multer.File,
+    options?: FileUploadOptions,
+  ): Promise<Result<FileUploadResult, FileUploadError>>;
 
   deleteFileById(fileId: string): Promise<void>;
 
   extractFileIdFromUrl(url: string): string | null;
 
-  generateFileUrl(fileId: string, options?: FileOptionsDto): string;
+  generateFileUrl(
+    fileId: string,
+    options?: FileUploadOptions,
+  ): Result<GenerateUrlDto, FileUploadError>;
 }
 
 export const IFilesService = Symbol('IFilesService');
