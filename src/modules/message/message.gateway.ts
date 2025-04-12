@@ -1,4 +1,5 @@
 import {
+  ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -8,7 +9,6 @@ import {
 } from '@nestjs/websockets';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Server, Socket } from 'socket.io';
-import { SuccessResponse } from 'src/shared/classes/wrapper';
 import {
   CreateMessageRequestDto,
   CreateMessageRequestSchema,
@@ -28,6 +28,7 @@ export class MessageGateway
   async handleSendMessage(
     @MessageBody(new ZodValidationPipe(CreateMessageRequestSchema))
     data: CreateMessageRequestDto,
+    @ConnectedSocket() client: Socket,
   ) {
     //Handle error for invalid data like groupId
 
@@ -42,10 +43,7 @@ export class MessageGateway
     this.server.to(data.groupId).emit('receiveMessage', data);
 
     if (result.isOk()) {
-      return new SuccessResponse<Message>(
-        'Message created successfully!',
-        result.value,
-      );
+      return result.value;
     } else {
       return result.error.toJSON();
     }

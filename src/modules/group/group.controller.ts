@@ -8,21 +8,21 @@ import {
   Post,
   Query,
   Res,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
-import { CreateGroupRequestDto } from './dto/create-group.dto';
-import { GroupService } from './group.service';
-import {
-  CursorPaginationWrapper,
-  SuccessResponse,
-} from 'src/shared/classes/wrapper';
-import { GroupEntity } from './entities/group.entity';
-import { get } from 'http';
+import { CursorPaginationWrapper } from 'src/shared/classes/wrapper';
 import { MessageService } from '../message/message.service';
 import { Message } from '../message/schemas/message.schemas';
+import { UserEntity } from '../user/entities/user.entity';
 import { AddUserRequestDto } from '../user_group/dto/add-user-request.dto';
 import { UserGroupEntity } from '../user_group/entities/user_group.entity';
-import { UserEntity } from '../user/entities/user.entity';
+import { CreateGroupRequestDto } from './dto/create-group.dto';
+import { GroupEntity } from './entities/group.entity';
+import { GroupService } from './group.service';
+import { ServiceError } from 'src/shared/errors/service.error';
 @Controller({ path: 'groups', version: '1' })
 export class GroupController {
   constructor(
@@ -31,23 +31,21 @@ export class GroupController {
   ) {}
 
   @Post()
+  @UseInterceptors(FileInterceptor('logo'))
   async create(
     @Body() createGroupDto: CreateGroupRequestDto,
     @Res() res: Response,
+    @UploadedFile() logo: Express.Multer.File,
   ) {
-    const result = await this.groupService.create(createGroupDto);
+    const result = await this.groupService.create(createGroupDto, logo);
 
     if (result.isOk()) {
-      return res
-        .status(HttpStatus.CREATED)
-        .json(
-          new SuccessResponse<GroupEntity>(
-            'Group created successfully!',
-            result.value,
-          ),
-        );
+      return res.status(HttpStatus.CREATED).json(result.value);
     } else {
-      return result.error.createResponse(res);
+      if (result.error instanceof ServiceError) {
+        return result.error.createResponse(res);
+      } else
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(result.error);
     }
   }
 
@@ -65,14 +63,7 @@ export class GroupController {
     );
 
     if (result.isOk()) {
-      return res
-        .status(HttpStatus.OK)
-        .json(
-          new SuccessResponse<CursorPaginationWrapper<Message>>(
-            'Group messages retrieved successfully!',
-            result.value,
-          ),
-        );
+      return res.status(HttpStatus.OK).json(result.value);
     } else {
       return result.error.createResponse(res);
     }
@@ -84,17 +75,15 @@ export class GroupController {
     @Param('userId') userId: string,
     @Res() res: Response,
   ) {
-    const result = await this.groupService.removeUser(userId, groupId);
+    // Sample for requesterId
+    const result = await this.groupService.removeUser(
+      userId,
+      groupId,
+      '123123',
+    );
 
     if (result.isOk()) {
-      return res
-        .status(HttpStatus.OK)
-        .json(
-          new SuccessResponse<null>(
-            'User removed from group successfully!',
-            null,
-          ),
-        );
+      return res.status(HttpStatus.OK).json(null);
     } else {
       return result.error.createResponse(res);
     }
@@ -106,17 +95,15 @@ export class GroupController {
     @Body('userId') addUserRequestDto: AddUserRequestDto,
     @Res() res: Response,
   ) {
-    const result = await this.groupService.addUser(groupId, addUserRequestDto);
+    // Sample for requesterId
+    const result = await this.groupService.addUser(
+      groupId,
+      addUserRequestDto,
+      '123123',
+    );
 
     if (result.isOk()) {
-      return res
-        .status(HttpStatus.OK)
-        .json(
-          new SuccessResponse<UserGroupEntity>(
-            'User added to group successfully!',
-            result.value,
-          ),
-        );
+      return res.status(HttpStatus.OK).json(result.value);
     } else {
       return result.error.createResponse(res);
     }
@@ -127,14 +114,7 @@ export class GroupController {
     const result = await this.groupService.getUsers(groupId);
 
     if (result.isOk()) {
-      return res
-        .status(HttpStatus.OK)
-        .json(
-          new SuccessResponse<UserEntity[]>(
-            'Group users retrieved successfully!',
-            result.value,
-          ),
-        );
+      return res.status(HttpStatus.OK).json(result.value);
     } else {
       return result.error.createResponse(res);
     }

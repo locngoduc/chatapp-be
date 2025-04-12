@@ -2,7 +2,6 @@ import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { err, ok, Result } from 'neverthrow';
-import { SuccessResponse } from 'src/shared/classes/wrapper/success-response-wrapper';
 import { DatabaseError } from 'src/shared/errors/database.error';
 import { EntityNotFoundError } from 'src/shared/errors/entity-not-found.error';
 import { CreateGroupRequestDto } from './dto/create-group.dto';
@@ -10,6 +9,8 @@ import { GroupEntity } from './entities/group.entity';
 import { UserGroupEntity } from '../user_group/entities/user_group.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { AddUserRequestDto } from '../user_group/dto/add-user-request.dto';
+import { CloudinaryService } from '../files/impl/cloudinary.service';
+import { FileUploadError } from '../files/dtos/file-upload-error.dto';
 
 //Pagination later
 @Injectable()
@@ -21,19 +22,29 @@ export class GroupService {
     private readonly userGroupRepository: EntityRepository<UserGroupEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: EntityRepository<UserEntity>,
+    private readonly cloudinaryService: CloudinaryService,
     private readonly entityManager: EntityManager,
   ) {}
 
   async create(
     createGroupDto: CreateGroupRequestDto,
-  ): Promise<Result<GroupEntity, DatabaseError>> {
-    // Call cloudinary to upload the image and get the URL
+    logo: Express.Multer.File,
+  ): Promise<Result<GroupEntity, DatabaseError | FileUploadError>> {
+    const uploadResult = await this.cloudinaryService.uploadFile(logo, {
+      id: createGroupDto.groupName,
+      metadata: {
+        tags: ['group'],
+      },
+    });
+
+    if (uploadResult.isErr()) {
+      return err(uploadResult.error);
+    }
 
     try {
       const group = this.groupRepository.create({
         groupName: createGroupDto.groupName,
-        // For now, we are using a placeholder image
-        logoImage: 'https://placehold.co/40/png',
+        logoImage: uploadResult.value.url,
       });
 
       await this.entityManager.persistAndFlush(group);
@@ -44,13 +55,16 @@ export class GroupService {
     }
   }
 
-  async remove(
-    id: string,
+  async deleteGroup(
+    groupId: string,
+    requesterId: string,
   ): Promise<Result<null, DatabaseError | EntityNotFoundError>> {
-    const group = await this.groupRepository.findOne(id);
+    // Check if the requester is an admin of the group
+
+    const group = await this.groupRepository.findOne(groupId);
 
     if (!group) {
-      return err(new EntityNotFoundError('Group', id));
+      return err(new EntityNotFoundError('Group', groupId));
     }
 
     try {
@@ -65,7 +79,10 @@ export class GroupService {
   async addUser(
     groupId: string,
     createMembershipDto: AddUserRequestDto,
+    requesterId: string,
   ): Promise<Result<UserGroupEntity, DatabaseError | EntityNotFoundError>> {
+    // Check if the requester is an admin of the group
+
     const { userId } = createMembershipDto;
 
     const user = await this.userRepository.findOne({ id: userId });
@@ -95,7 +112,19 @@ export class GroupService {
   async removeUser(
     userId: string,
     groupId: string,
+    requesterId: string,
   ): Promise<Result<null, DatabaseError | EntityNotFoundError>> {
+    const group = await this.groupRepository.findOne({ id: groupId });
+
+    if (!group) {
+      return err(new EntityNotFoundError('Group', groupId));
+    }
+
+    if (requesterId !== group.ownerId) {
+      // Waiting for the authentication service to be merged
+      //return err(new UnauthorizedError('User is not the owner of the group'));
+    }
+
     const userGroup = await this.userGroupRepository.findOne({
       user: userId,
       group: groupId,
@@ -103,6 +132,12 @@ export class GroupService {
 
     if (!userGroup) {
       return err(new EntityNotFoundError('UserGroup', userId + groupId));
+    }
+
+    const user = await this.userRepository.findOne({ id: userId });
+
+    if (!user) {
+      return err(new EntityNotFoundError('User', userId));
     }
 
     try {

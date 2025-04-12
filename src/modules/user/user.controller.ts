@@ -10,7 +10,6 @@ import {
 import { UsersService } from './user.service';
 import { CreateAccountRequestDto } from './dtos/create-account-request.dto';
 import { Response } from 'express';
-import { SuccessResponse } from 'src/shared/classes/wrapper';
 import { GroupEntity } from '../group/entities/group.entity';
 @Controller({
   version: '1',
@@ -37,15 +36,7 @@ export class UsersController {
   ) {
     const result = await this.usersService.getGroupsByUserId(userId);
 
-    if (result.isOk())
-      return res
-        .status(HttpStatus.OK)
-        .json(
-          new SuccessResponse<GroupEntity[]>(
-            'User groups retrieved successfully!',
-            result.value,
-          ),
-        );
+    if (result.isOk()) return res.status(HttpStatus.OK).json(result.value);
     else return result.error.createResponse(res);
   }
 }

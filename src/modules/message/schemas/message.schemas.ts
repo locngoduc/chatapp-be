@@ -24,8 +24,8 @@ export class Message {
   @Prop()
   content: string;
 
-  @Prop({ type: [Object] })
-  attachments?: Attachment[];
+  @Prop()
+  attachments?: string[];
 
   @Prop({
     name: 'created_at',

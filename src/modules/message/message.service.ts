@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { err, ok, Result } from 'neverthrow';
-import {
-  CursorPaginationWrapper,
-  SuccessResponse,
-} from 'src/shared/classes/wrapper';
+import { CursorPaginationWrapper } from 'src/shared/classes/wrapper';
 import { DatabaseError } from 'src/shared/errors/database.error';
 import { EntityNotFoundError } from 'src/shared/errors/entity-not-found.error';
 import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
@@ -87,7 +84,8 @@ export class MessageService {
 
   async deleteMessage(
     messageId: string,
-  ): Promise<Result<SuccessResponse<null>, DatabaseError>> {
+    requesterId: string,
+  ): Promise<Result<null, DatabaseError>> {
     try {
       const deletedMessage = await this.messageModel
         .findByIdAndDelete(messageId)

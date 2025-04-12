@@ -1,6 +1,4 @@
-import { SuccessResponse } from './success-response-wrapper';
-
-export class OffsetPaginationWrapper<T> extends SuccessResponse<T> {
+export class OffsetPaginationWrapper<T> {
   total: number;
   page: number;
   limit: number;
@@ -17,8 +15,6 @@ export class OffsetPaginationWrapper<T> extends SuccessResponse<T> {
     limit: number,
     result: T[],
   ) {
-    super(message, data);
-
     const totalPages = Math.ceil(total / limit);
 
     this.totalPages = totalPages;

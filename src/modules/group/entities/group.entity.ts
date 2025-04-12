@@ -3,6 +3,7 @@ import {
   Collection,
   Entity,
   ManyToMany,
+  ManyToOne,
   Opt,
   PrimaryKey,
   Property,
@@ -16,11 +17,20 @@ export class GroupEntity {
   @PrimaryKey({ type: 'uuid' })
   id: string & Opt = uuidv4();
 
+  @Property({ name: 'owner_id' })
+  ownerId: string;
+
   @Property({ name: 'group_name' })
   groupName!: string;
 
   @Property({ name: 'logo_image' })
   logoImage?: string & Opt;
+
+  @ManyToOne({
+    entity: () => UserEntity,
+    fieldName: 'ownerId',
+  })
+  owner?: UserEntity;
 
   @ManyToMany({
     entity: () => UserEntity,
