@@ -10,6 +10,8 @@ import { AppService } from './app.service';
 import ormConfig from './config/mikro-orm.config';
 import { envConfigParser } from './config/env.config';
 import { UsersModule } from './modules/user/user.module';
+import { FilesModule } from './modules/files/files.module';
+import { FilesController } from './modules/files/files.controller';
 
 @Module({
   imports: [
@@ -22,8 +24,9 @@ import { UsersModule } from './modules/user/user.module';
     }),
     EventEmitterModule.forRoot({ global: true }),
     UsersModule,
+    FilesModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, FilesController],
   providers: [
     AppService,
     {
