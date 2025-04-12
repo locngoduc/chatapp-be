@@ -38,6 +38,7 @@
     "@nestjs/platform-socket.io": "^10.0.0",
     "@nestjs/websockets": "^10.4.15",
     "argon2": "^0.41.1",
+    "buffer-to-stream": "^1.0.0",
     "class-validator": "^0.14.1",
     "cloudinary": "^2.6.0",
     "connect-redis": "^8.0.1",
