@@ -19,19 +19,30 @@ import { GenerateUrlDto } from '../dtos/generate-url.dto';
 
 @Injectable()
 export class CloudinaryService implements IFilesService {
-  async uploadImage(
+  async uploadFile(
     file: Express.Multer.File,
     options?: FileUploadOptions,
   ): Promise<Result<FileUploadResult, FileUploadError>> {
     try {
+      const fileType = file.mimetype.split('/')[0];
+      let resourceType: 'image' | 'video' | 'raw' = 'raw';
+
+      if (fileType === 'image') {
+        resourceType = 'image';
+      } else if (fileType === 'video' || fileType === 'audio') {
+        resourceType = 'video';
+      } else {
+        resourceType = 'raw';
+      }
+
       const result = await new Promise<UploadApiResponse>((resolve, reject) => {
         const upload = cloudinary.uploader.upload_stream(
           {
             folder: 'default',
             filename_override: file.originalname,
             public_id: options?.id,
-            format: file.mimetype.split('/')[1],
-            resource_type: 'image',
+            format: file.originalname.split('.').pop(),
+            resource_type: resourceType,
             transformation: {
               width: options?.metadata.width,
               height: options?.metadata.height,
@@ -46,119 +57,46 @@ export class CloudinaryService implements IFilesService {
         toStream(file.buffer).pipe(upload);
       });
 
-      return ok({
+      const baseResult = {
         id: result.public_id,
-        url: result.url,
-        contentType: 'image',
+        url: result.secure_url,
+        contentType: resourceType,
         filename: result.original_filename,
         date: result.created_at,
         provider: 'CLOUDINARY',
-        type: 'image',
-        metadata: {
-          width: result.width,
-          height: result.height,
-          format: result.format,
-        },
-      } as ImageFileUploadResult);
-    } catch (error) {
-      const uploadErr = error as UploadApiErrorResponse;
-      return err({
-        success: false,
-        message: uploadErr.message || 'Failed to upload file',
-        statusCode: uploadErr.http_code || 500,
-      } as FileUploadError);
-    }
-  }
+        type: fileType as 'image' | 'video' | 'document' | 'audio' | 'raw',
+      };
 
-  async uploadVideo(
-    file: Express.Multer.File,
-    options?: FileUploadOptions,
-  ): Promise<Result<FileUploadResult, FileUploadError>> {
-    try {
-      const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-        const upload = cloudinary.uploader.upload_stream(
-          {
-            folder: 'default',
-            filename_override: file.originalname,
-            public_id: options?.id,
-            format: file.mimetype.split('/')[1],
-            resource_type: 'video',
-            transformation: {
-              width: options?.metadata.width,
-              height: options?.metadata.height,
-            },
-            tags: options?.metadata.tags || [],
+      if (result.resource_type === 'image') {
+        return ok({
+          ...baseResult,
+          metadata: {
+            width: result.width,
+            height: result.height,
+            format: result.format,
           },
-          (error, result) => {
-            if (error) return reject(error);
-            resolve(result);
+        } as ImageFileUploadResult);
+      } else if (result.resource_type === 'video') {
+        return ok({
+          ...baseResult,
+          metadata: {
+            format: result.format,
+            duration: result.hasOwnProperty('duration')
+              ? result.duration
+              : undefined,
           },
-        );
-        toStream(file.buffer).pipe(upload);
-      });
-
-      return ok({
-        id: result.public_id,
-        url: result.url,
-        contentType: 'video',
-        filename: result.original_filename,
-        date: result.created_at,
-        provider: 'CLOUDINARY',
-        type: 'video',
-        metadata: {
-          ...result.metadata,
-          format: result.format,
-        },
-      } as VideoFileUploadResult);
-    } catch (error) {
-      const uploadErr = error as UploadApiErrorResponse;
-      return err({
-        success: false,
-        message: uploadErr.message || 'Failed to upload file',
-        statusCode: uploadErr.http_code || 500,
-      } as FileUploadError);
-    }
-  }
-
-  async uploadGenericFile(
-    file: Express.Multer.File,
-    options?: FileUploadOptions,
-  ): Promise<Result<FileUploadResult, FileUploadError>> {
-    try {
-      const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-        const upload = cloudinary.uploader.upload_stream(
-          {
-            folder: 'default',
-            filename_override: file.originalname,
-            public_id: options?.id,
-            format: file.mimetype.split('/')[1],
-            resource_type: 'raw',
-            transformation: {
-              width: options?.metadata.width,
-              height: options?.metadata.height,
-            },
-            tags: options?.metadata.tags || [],
+        } as VideoFileUploadResult);
+      } else {
+        return ok({
+          ...baseResult,
+          metadata: {
+            format: result.format,
+            ...(result.hasOwnProperty('duration')
+              ? { duration: result.duration }
+              : {}),
           },
-          (error, result) => {
-            if (error) return reject(error);
-            resolve(result);
-          },
-        );
-        toStream(file.buffer).pipe(upload);
-      });
-
-      return ok({
-        id: result.public_id,
-        url: result.url,
-        contentType: result.resource_type,
-        filename: result.original_filename,
-        date: result.created_at,
-        provider: 'CLOUDINARY',
-        type: file.mimetype.split('/')[0] as 'document' | 'audio' | 'raw',
-        metadata: {
-          ...result.metadata,
-        },
-      } as GenericFileUploadResult);
+        } as GenericFileUploadResult);
+      }
     } catch (error) {
       const uploadErr = error as UploadApiErrorResponse;
       return err({

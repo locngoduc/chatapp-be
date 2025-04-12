@@ -29,6 +29,7 @@ export interface VideoFileUploadResult extends BaseFileUploadResult {
 export interface GenericFileUploadResult extends BaseFileUploadResult {
   type: 'document' | 'audio' | 'raw';
   metadata?: {
+    format: string;
     [key: string]: any;
   };
 }

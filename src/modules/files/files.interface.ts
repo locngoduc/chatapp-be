@@ -5,17 +5,7 @@ import { Result } from 'neverthrow';
 import { GenerateUrlDto } from './dtos/generate-url.dto';
 
 export interface IFilesService {
-  uploadImage(
-    file: Express.Multer.File,
-    options?: FileUploadOptions,
-  ): Promise<Result<FileUploadResult, FileUploadError>>;
-
-  uploadVideo(
-    file: Express.Multer.File,
-    options?: FileUploadOptions,
-  ): Promise<Result<FileUploadResult, FileUploadError>>;
-
-  uploadGenericFile(
+  uploadFile(
     file: Express.Multer.File,
     options?: FileUploadOptions,
   ): Promise<Result<FileUploadResult, FileUploadError>>;

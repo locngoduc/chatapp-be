@@ -19,19 +19,7 @@ export class FilesController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   uploadImage(@UploadedFile() file: Express.Multer.File) {
-    return this.fileService.uploadImage(file);
-  }
-
-  @Post('upload/video')
-  @UseInterceptors(FileInterceptor('file'))
-  uploadVideo(@UploadedFile() file: Express.Multer.File) {
-    return this.fileService.uploadVideo(file);
-  }
-
-  @Post('upload/document')
-  @UseInterceptors(FileInterceptor('file'))
-  uploadDocument(@UploadedFile() file: Express.Multer.File) {
-    return this.fileService.uploadGenericFile(file);
+    return this.fileService.uploadFile(file);
   }
 
   @Delete('delete')
