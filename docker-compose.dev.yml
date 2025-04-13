@@ -9,6 +9,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - chat-data:/var/lib/postgresql/data
+    networks:
+      - chat_network
 
   chat-redis:
     image: redis:7.4.0
@@ -18,6 +20,8 @@ services:
       - '6379:6379'
     volumes:
       - chat-session:/data
+    networks:
+      - chat_network
 
   rabbitmq:
     image: rabbitmq:4-alpine
@@ -28,6 +32,52 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - chat_network
+
+  chat-api-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    ports:
+      - '3001:3001'
+    depends_on:
+      - chat-db
+      - chat-redis
+      - rabbitmq
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=chat-db
+      - REDIS_HOST=chat-redis
+      - APP_PORT=3001
+      - INSTANCE_NAME=node-hcm-1
+    networks:
+      - chat_network
+
+  chat-api-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    ports:
+      - '3002:3002'
+    depends_on:
+      - chat-db
+      - chat-redis
+      - rabbitmq
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=chat-db
+      - REDIS_HOST=chat-redis
+      - APP_PORT=3002
+      - INSTANCE_NAME=node-hcm-2
     networks:
       - chat_network
 

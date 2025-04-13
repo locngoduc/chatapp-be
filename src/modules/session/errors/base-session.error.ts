@@ -1,8 +1,8 @@
 import { ServiceError } from '../../../shared/errors/service.error';
 
-export class UserError extends ServiceError {
+export class SessionError extends ServiceError {
   constructor(message: string) {
     super(message);
-    this.name = 'UserError';
+    this.name = 'SessionError';
   }
 }
