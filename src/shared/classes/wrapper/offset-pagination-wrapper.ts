@@ -7,14 +7,7 @@ export class OffsetPaginationWrapper<T> {
   prevPage?: number | null;
   result: T[];
 
-  constructor(
-    message: string,
-    data: T,
-    total: number,
-    page: number,
-    limit: number,
-    result: T[],
-  ) {
+  constructor(total: number, page: number, limit: number, result: T[]) {
     const totalPages = Math.ceil(total / limit);
 
     this.totalPages = totalPages;
