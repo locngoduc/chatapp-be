@@ -13,6 +13,8 @@ import { UsersModule } from './modules/user/user.module';
 import { FilesModule } from './modules/files/files.module';
 import { FilesController } from './modules/files/files.controller';
 import { LoggerModule } from 'nestjs-pino';
+import { SessionModule } from './modules/session/session.module';
+import { PassportModule } from '@nestjs/passport';
 
 import { MongooseModule } from '@nestjs/mongoose';
 import mongooseConfig, { MONGO_URI } from './config/mongoose.config';
@@ -44,6 +46,8 @@ import { UserGroupModule } from './modules/user_group/user_group.module';
     }),
     UsersModule,
     FilesModule,
+    SessionModule,
+    PassportModule.register({ session: true }),
     MessageModule,
     GroupModule,
     UserGroupModule,
@@ -54,6 +58,13 @@ import { UserGroupModule } from './modules/user_group/user_group.module';
     {
       provide: APP_PIPE,
       useClass: ZodValidationPipe,
+    },
+    {
+      provide: 'APP_NAME',
+      useFactory: (configService: ConfigService) => {
+        return configService.get('INSTANCE_NAME');
+      },
+      inject: [ConfigService],
     },
   ],
 })
