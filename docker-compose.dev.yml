@@ -35,6 +35,17 @@ services:
     networks:
       - chat_network
 
+  envoy:
+    image: envoyproxy/envoy:v1.33-latest
+    container_name: chat-envoy
+    volumes:
+      - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml
+    ports:
+      - '8080:8080'
+      - '9901:9901'
+    networks:
+      - chat_network
+
   chat-api-1:
     build:
       context: .
