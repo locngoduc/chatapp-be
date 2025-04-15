@@ -1,13 +1,13 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
-import { EnvConfig } from './config/env.config';
-import { Logger } from 'nestjs-pino';
-import * as session from 'express-session';
-import * as passport from 'passport';
-import Redis from 'ioredis';
+import { NestFactory } from '@nestjs/core';
 import { RedisStore } from 'connect-redis';
-import { IoAdapter } from '@nestjs/platform-socket.io';
+import * as session from 'express-session';
+import Redis from 'ioredis';
+import { Logger } from 'nestjs-pino';
+import * as passport from 'passport';
+import { AppModule } from './app.module';
+import { EnvConfig } from './config/env.config';
+import { SocketIOAdapter } from './shared/socket/socket-io.apdater';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -29,20 +29,28 @@ async function bootstrap() {
     prefix: 'chat-session:',
   });
 
-  app.use(
-    session({
-      name: 'chat-session',
-      store: redisStore,
-      secret: configService.getOrThrow<string>('SESSION_SECRET'),
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 30,
-      },
-    }),
-  );
+  const sessionMiddleware = session({
+    store: redisStore,
+    resave: false,
+    saveUninitialized: false,
+    secret: configService.getOrThrow<string>('SESSION_SECRET'),
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24 * 31,
+    },
+  });
+
+  app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
+  app.useWebSocketAdapter(
+    new SocketIOAdapter(
+      app,
+      configService,
+      sessionMiddleware,
+      passport.initialize(),
+      passport.session(),
+    ),
+  );
 
   await app.listen(configService.get('APP_PORT'));
 }
