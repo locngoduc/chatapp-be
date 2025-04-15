@@ -33,17 +33,17 @@ static_resources:
                     - name: local_service
                       domains: ['*']
                       routes:
-                        # - match:
-                        #     prefix: '/ws' # Specific route for WebSocket
-                        #   route:
-                        #     cluster: chat_service
-                        #     timeout: 0s # Important for WebSockets
-                        #     upgrade_configs:
-                        #       - upgrade_type: websocket
-                        #         enabled: true
-                        #     hash_policy:
-                        #       - header:
-                        #           header_name: x-session-id
+                        - match:
+                            prefix: '/ws' # Specific route for WebSocket
+                          route:
+                            cluster: chat_service
+                            timeout: 0s # Important for WebSockets
+                            upgrade_configs:
+                              - upgrade_type: websocket
+                                enabled: true
+                            hash_policy:
+                              - header:
+                                  header_name: x-session-id
 
                         - match:
                             prefix: '/' # All other HTTP routes

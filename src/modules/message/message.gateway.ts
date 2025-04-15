@@ -12,6 +12,7 @@ import {
   CreateMessageRequestSchema,
 } from './dtos/create-message-request.dto';
 import { MessageService } from './message.service';
+import { UpdateMessageRequestDto } from './dtos/update-message-request.dto';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MessageGateway {
@@ -49,6 +50,52 @@ export class MessageGateway {
     @MessageBody(new ZodValidationPipe(CreateMessageRequestSchema))
     data: CreateMessageRequestDto,
   ): string {
+    //Handle error for invalid data like authorId and groupId
+
+    //Handle send message to group - waiting for rabbitMQ and redis from tth
+
+    //Using redis service to take all server instance in group
+
+    //Handle push message to RabbitMQ
+
+    return 'Hello world';
+  }
+
+  @SubscribeMessage('receiveEditMessage')
+  handleReceiveUpdateMessage(
+    @MessageBody(new ZodValidationPipe(UpdateMessageRequestDto))
+    data: UpdateMessageRequestDto,
+  ): string {
+    //Handle error for invalid data like authorId and groupId
+
+    //Handle send message to group - waiting for rabbitMQ and redis from tth
+
+    //Using redis service to take all server instance in group
+
+    //Handle push update message to RabbitMQ
+
+    return 'Hello world';
+  }
+
+  @SubscribeMessage('receiveDeleteMessage')
+  handleReceiveDeleteMessage(
+    @MessageBody(new ZodValidationPipe(CreateMessageRequestSchema))
+    data: CreateMessageRequestDto,
+  ): string {
+    //Handle error for invalid data like authorId and groupId
+
+    //Handle send message to group - waiting for rabbitMQ and redis from tth
+
+    //Using redis service to take all server instance in group
+
+    //Handle push message to RabbitMQ
+
+    return 'Hello world';
+  }
+
+  @SubscribeMessage('test')
+  test(): string {
+    this.server.emit('test', 'test');
     //Handle error for invalid data like authorId and groupId
 
     //Handle send message to group - waiting for rabbitMQ and redis from tth
