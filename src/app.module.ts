@@ -1,6 +1,6 @@
 //app.module.ts
 import { MikroOrmModule } from '@mikro-orm/nestjs';
-import { Logger, Module, OnModuleInit } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -17,6 +17,7 @@ import { SessionModule } from './modules/session/session.module';
 import { PassportModule } from '@nestjs/passport';
 import { GatewayModule } from './modules/gateways/gateway.module';
 import { RedisModule } from './modules/redis/redis.module';
+import { LokiOptions } from 'pino-loki';
 
 @Module({
   imports: [
@@ -28,14 +29,28 @@ import { RedisModule } from './modules/redis/redis.module';
       autoLoadEntities: true,
     }),
     EventEmitterModule.forRoot({ global: true }),
-    LoggerModule.forRoot({
-      pinoHttp: {
-        level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
-        transport:
-          process.env.NODE_ENV !== 'production'
-            ? { target: 'pino-pretty', options: { colorize: true } }
-            : undefined,
-      },
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<EnvConfig>) => ({
+        pinoHttp: {
+          level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
+          transport:
+            process.env.NODE_ENV !== 'production'
+              ? { target: 'pino-pretty', options: { colorize: true } }
+              : {
+                  target: 'pino-loki',
+                  options: {
+                    host: 'http://loki:3100',
+                    batching: true,
+                    interval: 5,
+                    labels: {
+                      job: 'api-server',
+                      instance: configService.get('INSTANCE_NAME'),
+                    },
+                  } satisfies LokiOptions,
+                },
+        },
+      }),
     }),
     UsersModule,
     FilesModule,
@@ -60,14 +75,4 @@ import { RedisModule } from './modules/redis/redis.module';
     },
   ],
 })
-export class AppModule implements OnModuleInit {
-  private readonly logger = new Logger(AppModule.name);
-
-  constructor(private readonly configService: ConfigService<EnvConfig>) {}
-
-  onModuleInit() {
-    this.logger.log(
-      `Instance: ${this.configService.get('INSTANCE_NAME')} started on port ${this.configService.get('APP_PORT')}`,
-    );
-  }
-}
+export class AppModule {}
