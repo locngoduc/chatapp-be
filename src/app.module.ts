@@ -22,6 +22,7 @@ import mongooseConfig, { MONGO_URI } from './config/mongoose.config';
 import { MessageModule } from './modules/message/message.module';
 import { GroupModule } from './modules/group/group.module';
 import { UserGroupModule } from './modules/user_group/user_group.module';
+import { MessageController } from './modules/message/message.controller';
 
 @Module({
   imports: [
@@ -54,7 +55,7 @@ import { UserGroupModule } from './modules/user_group/user_group.module';
     UserGroupModule,
     GatewayModule,
   ],
-  controllers: [AppController, FilesController],
+  controllers: [AppController, FilesController, MessageController],
   providers: [
     AppService,
     {

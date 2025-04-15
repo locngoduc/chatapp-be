@@ -1,3 +1,5 @@
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityManager, EntityRepository, wrap } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -5,15 +7,15 @@ import { err, ok, Result } from 'neverthrow';
 import { CursorPaginationWrapper } from 'src/shared/classes/wrapper';
 import { DatabaseError } from 'src/shared/errors/database.error';
 import { EntityNotFoundError } from 'src/shared/errors/entity-not-found.error';
+import { GroupEntity } from '../group/entities/group.entity';
+import { UnauthorizedError } from '../session/errors/unauthorized.error';
+import { UserGroupEntity } from '../user_group/entities/user_group.entity';
 import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
 import { UpdateMessageRequestDto } from './dtos/update-message-request.dto';
 import { Message, MessageDocument } from './schemas/message.schemas';
-import { InjectRepository } from '@mikro-orm/nestjs';
-import { GroupEntity } from '../group/entities/group.entity';
-import { EntityRepository } from '@mikro-orm/postgresql';
-import { UserGroupEntity } from '../user_group/entities/user_group.entity';
-import { UserEntity } from '../user/entities/user.entity';
-import { UnauthorizedError } from '../session/errors/unauthorized.error';
+import { NotOwnerError } from './errors/not-owner.error';
+import { NotMemberError } from './errors/not-member.error';
+import { MessageError } from './errors/base-message.error';
 
 type QueryType = {
   groupId: string;
@@ -29,12 +31,16 @@ export class MessageService {
     private readonly groupRepository: EntityRepository<GroupEntity>,
     @InjectRepository(UserGroupEntity)
     private readonly userGroupRepository: EntityRepository<UserGroupEntity>,
+    private readonly entityManager: EntityManager,
   ) {}
 
   async createMessage(
     messageData: CreateMessageRequestDto,
     requesterId: string,
+    files?: Express.Multer.File[],
   ): Promise<Result<Message, DatabaseError | EntityNotFoundError>> {
+    //handle upload files
+
     const { groupId } = messageData;
 
     const group = await this.groupRepository.findOne({
@@ -68,7 +74,9 @@ export class MessageService {
     groupId: string,
     cursor?: string,
     limit: number = 1,
-  ): Promise<Result<CursorPaginationWrapper<Message>, DatabaseError>> {
+  ): Promise<
+    Result<CursorPaginationWrapper<Message>, DatabaseError | MessageError>
+  > {
     const group = await this.groupRepository.findOne({
       id: groupId,
     });
@@ -82,7 +90,7 @@ export class MessageService {
     });
 
     if (!userGroup) {
-      return err(new EntityNotFoundError('UserGroup', requesterId));
+      return err(new NotMemberError(requesterId, groupId));
     }
 
     const numericLimit = Number(limit);
@@ -122,16 +130,14 @@ export class MessageService {
   async deleteMessage(
     messageId: string,
     requesterId: string,
-  ): Promise<Result<null, DatabaseError>> {
+  ): Promise<Result<null, DatabaseError | MessageError>> {
     const message = await this.messageModel.findById(messageId).exec();
     if (!message) {
       return err(new EntityNotFoundError('Message', messageId));
     }
 
     if (message.authorId !== requesterId) {
-      return err(
-        new UnauthorizedError('User is not the author of the message'),
-      );
+      return err(new NotOwnerError(requesterId, messageId));
     }
 
     try {
@@ -152,19 +158,25 @@ export class MessageService {
   async updateMessageById(
     messageId: string,
     messageData: UpdateMessageRequestDto,
+    requesterId: string,
   ): Promise<Result<Message, EntityNotFoundError | DatabaseError>> {
     try {
-      const updatedMessage = await this.messageModel
-        .findByIdAndUpdate(
-          messageId,
-          { $set: { content: messageData.content } },
-          { new: true },
-        )
-        .exec();
+      const updatedMessage = await this.messageModel.findById(messageId).exec();
 
       if (!updatedMessage) {
         return err(new EntityNotFoundError('Message', messageId));
       }
+
+      if (updatedMessage.authorId !== requesterId) {
+        return err(new NotOwnerError(requesterId, messageId));
+      }
+
+      wrap(updatedMessage).assign({
+        ...messageData,
+        updatedAt: new Date(),
+      });
+
+      await this.entityManager.persistAndFlush(updatedMessage);
 
       return ok(updatedMessage);
     } catch (error) {

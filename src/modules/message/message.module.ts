@@ -6,6 +6,7 @@ import { UserGroupEntity } from '../user_group/entities/user_group.entity';
 import { MessageGateway } from './message.gateway';
 import { MessageService } from './message.service';
 import { Message, MessageSchema } from './schemas/message.schemas';
+import { MessageController } from './message.controller';
 
 @Module({
   imports: [
@@ -17,5 +18,6 @@ import { Message, MessageSchema } from './schemas/message.schemas';
   ],
   providers: [MessageService, MessageGateway],
   exports: [MessageService],
+  controllers: [MessageController],
 })
 export class MessageModule {}

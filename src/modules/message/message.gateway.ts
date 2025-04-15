@@ -13,23 +13,22 @@ import {
 } from './dtos/create-message-request.dto';
 import { MessageService } from './message.service';
 import { UpdateMessageRequestDto } from './dtos/update-message-request.dto';
+import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MessageGateway {
   constructor(private readonly messageService: MessageService) {}
 
+  private logger: Logger = new Logger(MessageGateway.name);
+
   @WebSocketServer() server: Server;
 
-  @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @MessageBody(new ZodValidationPipe(CreateMessageRequestSchema))
     data: CreateMessageRequestDto,
     @ConnectedSocket() socket: Socket,
   ) {
     //Waiting for websocket auth
-
-    // const user = client.user as UserEntity;
-    const result = await this.messageService.createMessage(data, 'Sample Id');
 
     //Using redis service to take all server instance in group
 
@@ -38,11 +37,32 @@ export class MessageGateway {
     //Sample for one instance
     this.server.to(data.groupId).emit('receiveMessage', data);
 
-    if (result.isOk()) {
-      return result.value;
-    } else {
-      return result.error.toJSON();
-    }
+    return 'Hello world';
+  }
+
+  async handleUpdateMessage(
+    @MessageBody(new ZodValidationPipe(UpdateMessageRequestDto))
+    data: UpdateMessageRequestDto,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    //Waiting for websocket auth
+    //Using redis service to take all server instance in group
+    //Handle push message to RabbitMQ
+    //Sample for one instance
+    return 'Hello world';
+  }
+
+  async handleDeleteMessage(
+    @MessageBody(new ZodValidationPipe(CreateMessageRequestSchema))
+    data: CreateMessageRequestDto,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    //Waiting for websocket auth
+    //Using redis service to take all server instance in group
+    //Handle push message to RabbitMQ
+    //Sample for one instance
+    this.server.to(data.groupId).emit('receiveDeleteMessage', data);
+    return 'Hello world';
   }
 
   @SubscribeMessage('receiveMessage')
@@ -95,15 +115,7 @@ export class MessageGateway {
 
   @SubscribeMessage('test')
   test(): string {
-    this.server.emit('test', 'test');
-    //Handle error for invalid data like authorId and groupId
-
-    //Handle send message to group - waiting for rabbitMQ and redis from tth
-
-    //Using redis service to take all server instance in group
-
-    //Handle push message to RabbitMQ
-
-    return 'Hello world';
+    this.logger.debug('Test message');
+    return 'Test message';
   }
 }

@@ -12,7 +12,6 @@ import { SocketIOAdapter } from './shared/socket/socket-io.apdater';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
-  app.useWebSocketAdapter(new IoAdapter(app));
 
   const configService = app.get<ConfigService<EnvConfig>>(ConfigService);
 

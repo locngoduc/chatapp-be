@@ -15,13 +15,12 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
-import { ServiceError } from 'src/shared/errors/service.error';
 import { MessageService } from '../message/message.service';
+import { AuthenticateGuard } from '../session/guards/authenticate.guard';
 import { UserEntity } from '../user/entities/user.entity';
 import { AddUserRequestDto } from '../user_group/dto/add-user-request.dto';
 import { CreateGroupRequestDto } from './dto/create-group.dto';
 import { GroupService } from './group.service';
-import { AuthenticateGuard } from '../session/guards/authenticate.guard';
 @Controller({ path: 'groups', version: '1' })
 export class GroupController {
   constructor(
@@ -49,10 +48,7 @@ export class GroupController {
     if (result.isOk()) {
       return res.status(HttpStatus.CREATED).json(result.value);
     } else {
-      if (result.error instanceof ServiceError) {
-        return result.error.createResponse(res);
-      } else
-        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(result.error);
+      return result.error.createResponse(res);
     }
   }
 
@@ -76,10 +72,7 @@ export class GroupController {
     if (result.isOk()) {
       return res.status(HttpStatus.OK).json(result.value);
     } else {
-      if (result.error instanceof ServiceError) {
-        return result.error.createResponse(res);
-      } else
-        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(result.error);
+      return result.error.createResponse(res);
     }
   }
 
