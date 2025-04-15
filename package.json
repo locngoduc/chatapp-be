@@ -22,6 +22,7 @@
     "docker:prod": "docker compose -f docker-compose.prod.yml up --build"
   },
   "dependencies": {
+    "@golevelup/nestjs-rabbitmq": "^5.7.0",
     "@mikro-orm/cli": "^6.4.7",
     "@mikro-orm/core": "^6.4.7",
     "@mikro-orm/migrations": "^6.4.7",
