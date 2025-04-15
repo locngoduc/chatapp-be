@@ -16,6 +16,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { SessionModule } from './modules/session/session.module';
 import { PassportModule } from '@nestjs/passport';
 import { GatewayModule } from './modules/gateways/gateway.module';
+import { RedisModule } from './modules/redis/redis.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { GatewayModule } from './modules/gateways/gateway.module';
     SessionModule,
     PassportModule.register({ session: true }),
     GatewayModule,
+    RedisModule,
   ],
   controllers: [AppController, FilesController],
   providers: [
