@@ -10,6 +10,8 @@ import { AppService } from './app.service';
 import ormConfig from './config/mikro-orm.config';
 import { EnvConfig, envConfigParser } from './config/env.config';
 import { UsersModule } from './modules/user/user.module';
+import { FilesModule } from './modules/files/files.module';
+import { FilesController } from './modules/files/files.controller';
 import { LoggerModule } from 'nestjs-pino';
 import { SessionModule } from './modules/session/session.module';
 import { PassportModule } from '@nestjs/passport';
@@ -35,11 +37,12 @@ import { GatewayModule } from './modules/gateways/gateway.module';
       },
     }),
     UsersModule,
+    FilesModule,
     SessionModule,
     PassportModule.register({ session: true }),
     GatewayModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, FilesController],
   providers: [
     AppService,
     {

@@ -12,6 +12,9 @@ export const envConfig = z.object({
   REDIS_HOST: z.string().nonempty(),
   REDIS_PASSWORD: z.string().nonempty(),
   SESSION_SECRET: z.string().nonempty(),
+  CLOUDINARY_NAME: z.string().nonempty(),
+  CLOUDINARY_API_KEY: z.string().nonempty(),
+  CLOUDINARY_API_SECRET: z.string().nonempty(),
 });
 
 export const envConfigParser = (env: Record<string, any>) => {
