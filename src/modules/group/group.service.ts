@@ -245,4 +245,25 @@ export class GroupService {
 
     return ok(group.users.getItems());
   }
+
+  async getAllUserIdByGroupId(
+    groupId: string,
+  ): Promise<Result<string[], DatabaseError | EntityNotFoundError>> {
+    const group = await this.groupRepository.findOne({ id: groupId });
+    if (!group) {
+      return err(new EntityNotFoundError('Group', groupId));
+    }
+
+    try {
+      const userGroups = await this.userGroupRepository.find(
+        { group: { id: groupId } },
+        { fields: ['user.id'] },
+      );
+
+      const userIds = userGroups.map((userGroup) => userGroup.user.id);
+      return ok(userIds);
+    } catch (error) {
+      return err(new DatabaseError('Unexpected error fetching user IDs'));
+    }
+  }
 }

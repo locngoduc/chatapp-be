@@ -1,6 +1,6 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityManager, EntityRepository, wrap } from '@mikro-orm/postgresql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { err, ok, Result } from 'neverthrow';
@@ -8,14 +8,18 @@ import { CursorPaginationWrapper } from 'src/shared/classes/wrapper';
 import { DatabaseError } from 'src/shared/errors/database.error';
 import { EntityNotFoundError } from 'src/shared/errors/entity-not-found.error';
 import { GroupEntity } from '../group/entities/group.entity';
-import { UnauthorizedError } from '../session/errors/unauthorized.error';
+import { GroupService } from '../group/group.service';
+import { RedisService } from '../redis/redis.service';
 import { UserGroupEntity } from '../user_group/entities/user_group.entity';
 import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
 import { UpdateMessageRequestDto } from './dtos/update-message-request.dto';
-import { Message, MessageDocument } from './schemas/message.schemas';
-import { NotOwnerError } from './errors/not-owner.error';
-import { NotMemberError } from './errors/not-member.error';
 import { MessageError } from './errors/base-message.error';
+import { NotMemberError } from './errors/not-member.error';
+import { NotOwnerError } from './errors/not-owner.error';
+import { Message, MessageDocument } from './schemas/message.schemas';
+import { CloudinaryService } from '../files/impl/cloudinary.service';
+import { FilesUploadError } from './errors/files-upload.error';
+import { FileUploadResult } from '../files/dtos/file-upload-result.dto';
 
 type QueryType = {
   groupId: string;
@@ -32,16 +36,42 @@ export class MessageService {
     @InjectRepository(UserGroupEntity)
     private readonly userGroupRepository: EntityRepository<UserGroupEntity>,
     private readonly entityManager: EntityManager,
+    private readonly redisService: RedisService,
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly groupService: GroupService,
   ) {}
+
+  private logger: Logger = new Logger(MessageService.name);
 
   async createMessage(
     messageData: CreateMessageRequestDto,
     requesterId: string,
     files?: Express.Multer.File[],
-  ): Promise<Result<Message, DatabaseError | EntityNotFoundError>> {
-    //handle upload files
+  ): Promise<
+    Result<
+      Message,
+      DatabaseError | EntityNotFoundError | FilesUploadError | MessageError
+    >
+  > {
+    let uploadFiles: FileUploadResult[] = [];
 
-    const { groupId } = messageData;
+    if (files && files.length > 0) {
+      const uploadPromises = files.map((file) =>
+        this.cloudinaryService.uploadFile(file),
+      );
+      const uploadResults = await Promise.all(uploadPromises);
+      const failedUploads = uploadResults.filter((result) => result.isErr());
+      if (failedUploads.length > 0) {
+        return err(new FilesUploadError('Error uploading files'));
+      }
+      uploadFiles = uploadResults.map((result) =>
+        result.isOk() ? result.value : null,
+      );
+    }
+
+    console.log('Uploaded files:', uploadFiles);
+
+    const { groupId, content } = messageData;
 
     const group = await this.groupRepository.findOne({
       id: groupId,
@@ -56,13 +86,29 @@ export class MessageService {
     });
 
     if (!userGroup) {
-      return err(new EntityNotFoundError('UserGroup', requesterId));
+      return err(new NotMemberError(requesterId, groupId));
     }
+
     try {
       const message = await this.messageModel.create({
         authorId: requesterId,
         ...messageData,
+        attachments: uploadFiles,
       });
+
+      // start: Publish to RabbitMQ here
+
+      const result = await this.groupService.getAllUserIdByGroupId(groupId);
+
+      if (result.isErr()) {
+        this.logger.error(`Error getting user IDs for group ${groupId}`);
+        return err(result.error);
+      }
+
+      const instanceMap = await this.groupUserIdsByInstance(result.value);
+
+      // end: Publish to RabbitMQ here
+
       return ok(message);
     } catch (error) {
       return err(new DatabaseError('Error creating message'));
@@ -130,7 +176,7 @@ export class MessageService {
   async deleteMessage(
     messageId: string,
     requesterId: string,
-  ): Promise<Result<null, DatabaseError | MessageError>> {
+  ): Promise<Result<null, DatabaseError | MessageError | EntityNotFoundError>> {
     const message = await this.messageModel.findById(messageId).exec();
     if (!message) {
       return err(new EntityNotFoundError('Message', messageId));
@@ -149,6 +195,10 @@ export class MessageService {
         return err(new EntityNotFoundError('Message', messageId));
       }
 
+      // start: Publish to RabbitMQ here
+
+      // end: Publish to RabbitMQ here
+
       return ok(null);
     } catch (error) {
       return err(new DatabaseError('Unexpected error'));
@@ -159,7 +209,9 @@ export class MessageService {
     messageId: string,
     messageData: UpdateMessageRequestDto,
     requesterId: string,
-  ): Promise<Result<Message, EntityNotFoundError | DatabaseError>> {
+  ): Promise<
+    Result<Message, EntityNotFoundError | DatabaseError | MessageError>
+  > {
     try {
       const updatedMessage = await this.messageModel.findById(messageId).exec();
 
@@ -178,9 +230,54 @@ export class MessageService {
 
       await this.entityManager.persistAndFlush(updatedMessage);
 
+      // start: Publish to RabbitMQ here
+      const { content } = messageData;
+
+      const result = await this.groupService.getAllUserIdByGroupId(
+        updatedMessage.groupId,
+      );
+
+      if (result.isErr()) {
+        this.logger.error(
+          `Error getting user IDs for group ${updatedMessage.groupId}`,
+        );
+        return err(result.error);
+      }
+
+      const instanceMap = await this.groupUserIdsByInstance(result.value);
+      // end: Publish to RabbitMQ here
       return ok(updatedMessage);
     } catch (error) {
       return err(new DatabaseError('Unexpected error'));
     }
+  }
+
+  async groupUserIdsByInstance(
+    userIds: string[],
+  ): Promise<Record<string, string[]>> {
+    const instanceMap: Record<string, Set<string>> = {};
+
+    const instancePairs = await Promise.all(
+      userIds.map(async (userId) => {
+        const instanceIds = await this.redisService.getUserInstances(userId);
+        return { userId, instanceIds };
+      }),
+    );
+
+    for (const { userId, instanceIds } of instancePairs) {
+      for (const instanceId of instanceIds) {
+        if (!instanceMap[instanceId]) {
+          instanceMap[instanceId] = new Set();
+        }
+        instanceMap[instanceId].add(userId);
+      }
+    }
+
+    const result: Record<string, string[]> = {};
+    for (const [instanceId, userSet] of Object.entries(instanceMap)) {
+      result[instanceId] = Array.from(userSet);
+    }
+
+    return result;
   }
 }

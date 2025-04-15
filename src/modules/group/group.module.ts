@@ -11,10 +11,11 @@ import { FilesModule } from '../files/files.module';
 @Module({
   imports: [
     MikroOrmModule.forFeature([GroupEntity, UserEntity, UserGroupEntity]),
-    MessageModule,
+    forwardRef(() => MessageModule),
     FilesModule,
   ],
   controllers: [GroupController],
   providers: [GroupService],
+  exports: [GroupService],
 })
 export class GroupModule {}

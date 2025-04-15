@@ -10,21 +10,17 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { MessageService } from './message.service';
-import { AuthenticateGuard } from '../session/guards/authenticate.guard';
-import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
-import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
-import { UserEntity } from '../user/entities/user.entity';
-import { Response } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { MessageGateway } from './message.gateway';
+import { Response } from 'express';
+import { AuthUser } from 'src/shared/decorators/auth-user.decorator';
+import { AuthenticateGuard } from '../session/guards/authenticate.guard';
+import { UserEntity } from '../user/entities/user.entity';
+import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
+import { MessageService } from './message.service';
 
 @Controller({ path: 'messages', version: '1' })
 export class MessageController {
-  constructor(
-    private readonly messageService: MessageService,
-    private readonly messageGateway: MessageGateway,
-  ) {}
+  constructor(private readonly messageService: MessageService) {}
 
   @Post()
   @UseGuards(AuthenticateGuard)
@@ -40,9 +36,6 @@ export class MessageController {
       requester.id,
       files,
     );
-
-    //Handle websocket here
-    //this.messageGateway.handleSendMessage(createMessageDto, files);
 
     if (result.isOk()) {
       return res.status(HttpStatus.CREATED).json(result.value);
@@ -65,9 +58,6 @@ export class MessageController {
       requester.id,
     );
 
-    //Handle websocket here
-    //this.messageGateway.handleUpdateMessage(updateMessageDto, files);
-
     if (result.isOk()) {
       return res.status(HttpStatus.CREATED).json(result.value);
     } else {
@@ -86,9 +76,6 @@ export class MessageController {
       messageId,
       requester.id,
     );
-
-    //Handle websocket here
-    //this.messageGateway.handleDeleteMessage(messageId, requester.id);
 
     if (result.isOk()) {
       return res.status(HttpStatus.OK).json(result.value);
