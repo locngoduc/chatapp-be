@@ -30,17 +30,23 @@ static_resources:
                   name: local_route
                   virtual_hosts:
                     - name: local_service
-                      domains: ['*']
+                      domains: [ '*' ]
                       routes:
+                        - match:
+                            prefix: '/socket.io'
+                          route:
+                            cluster: chat_service
+                            timeout: 0s
+                            hash_policy:
+                              - cookie:
+                                  name: 'ws_instance_cookie'
+                                  ttl: 3600s
+
                         - match:
                             prefix: '/'
                           route:
                             cluster: chat_service
                             timeout: 60s
-                            hash_policy:
-                              - cookie:
-                                  name: 'instance_cookie'
-                                  ttl: 3600s
                 http_filters:
                   - name: envoy.filters.http.router
                     typed_config:
