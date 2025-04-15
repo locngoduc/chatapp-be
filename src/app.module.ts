@@ -16,6 +16,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { SessionModule } from './modules/session/session.module';
 import { PassportModule } from '@nestjs/passport';
 import { GatewayModule } from './modules/gateways/gateway.module';
+import { RedisModule } from './modules/redis/redis.module';
 
 import { MongooseModule } from '@nestjs/mongoose';
 import mongooseConfig, { MONGO_URI } from './config/mongoose.config';
@@ -54,6 +55,7 @@ import { MessageController } from './modules/message/message.controller';
     GroupModule,
     UserGroupModule,
     GatewayModule,
+    RedisModule,
   ],
   controllers: [AppController, FilesController, MessageController],
   providers: [
