@@ -5,7 +5,6 @@ export class DictionaryService {
   private userToSocketMappings: Map<string, string[]> = new Map();
 
   addUserSocket(userId: string, socketId: string): void {
-    console.log(`Adding socket ${socketId} for user ${userId}`);
     const sockets = this.userToSocketMappings.get(userId) || [];
     if (!sockets.includes(socketId)) {
       sockets.push(socketId);

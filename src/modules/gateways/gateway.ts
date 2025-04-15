@@ -44,7 +44,6 @@ export class MyGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const user = (socket.request as any).user;
     if (user) {
       await this.redisService.removeUserInstance(user.id, this.instanceName);
-      console.log(`User ${user.email} disconnected from ${this.instanceName}`);
       this.dictionaryService.removeUserSocket(user.id, socket.id);
       const userSockets = this.dictionaryService.getUserSockets(user.id);
       this.logger.log(
