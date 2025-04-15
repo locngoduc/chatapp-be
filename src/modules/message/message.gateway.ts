@@ -1,8 +1,6 @@
 import {
   ConnectedSocket,
   MessageBody,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -14,12 +12,9 @@ import {
   CreateMessageRequestSchema,
 } from './dtos/create-message-request.dto';
 import { MessageService } from './message.service';
-import { Message } from './schemas/message.schemas';
 
 @WebSocketGateway({ cors: { origin: '*' } })
-export class MessageGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class MessageGateway {
   constructor(private readonly messageService: MessageService) {}
 
   @WebSocketServer() server: Server;
@@ -28,12 +23,12 @@ export class MessageGateway
   async handleSendMessage(
     @MessageBody(new ZodValidationPipe(CreateMessageRequestSchema))
     data: CreateMessageRequestDto,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() socket: Socket,
   ) {
-    //Handle error for invalid data like groupId
+    //Waiting for websocket auth
 
-    //Handle save message to db
-    const result = await this.messageService.createMessage(data);
+    // const user = client.user as UserEntity;
+    const result = await this.messageService.createMessage(data, 'Sample Id');
 
     //Using redis service to take all server instance in group
 
@@ -63,13 +58,5 @@ export class MessageGateway
     //Handle push message to RabbitMQ
 
     return 'Hello world';
-  }
-
-  handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
-  }
-
-  handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
   }
 }

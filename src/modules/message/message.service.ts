@@ -8,6 +8,12 @@ import { EntityNotFoundError } from 'src/shared/errors/entity-not-found.error';
 import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
 import { UpdateMessageRequestDto } from './dtos/update-message-request.dto';
 import { Message, MessageDocument } from './schemas/message.schemas';
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { GroupEntity } from '../group/entities/group.entity';
+import { EntityRepository } from '@mikro-orm/postgresql';
+import { UserGroupEntity } from '../user_group/entities/user_group.entity';
+import { UserEntity } from '../user/entities/user.entity';
+import { UnauthorizedError } from '../session/errors/unauthorized.error';
 
 type QueryType = {
   groupId: string;
@@ -19,20 +25,36 @@ export class MessageService {
   constructor(
     @InjectModel('Message', 'default')
     private readonly messageModel: Model<MessageDocument>,
+    @InjectRepository(GroupEntity)
+    private readonly groupRepository: EntityRepository<GroupEntity>,
+    @InjectRepository(UserGroupEntity)
+    private readonly userGroupRepository: EntityRepository<UserGroupEntity>,
   ) {}
 
   async createMessage(
     messageData: CreateMessageRequestDto,
-  ): Promise<Result<Message, DatabaseError>> {
-    //Take authorId from socket or auth context
+    requesterId: string,
+  ): Promise<Result<Message, DatabaseError | EntityNotFoundError>> {
+    const { groupId } = messageData;
 
-    //Handle error for groupId
-    //Handle error for authorId
+    const group = await this.groupRepository.findOne({
+      id: groupId,
+    });
+    if (!group) {
+      return err(new EntityNotFoundError('Group', groupId));
+    }
 
-    const authorId = '6779d50d-4baf-41cc-814d-c35942225d6c'; // Placeholder for authorId
+    const userGroup = await this.userGroupRepository.findOne({
+      user: { id: requesterId },
+      group: { id: group.id },
+    });
+
+    if (!userGroup) {
+      return err(new EntityNotFoundError('UserGroup', requesterId));
+    }
     try {
       const message = await this.messageModel.create({
-        authorId,
+        authorId: requesterId,
         ...messageData,
       });
       return ok(message);
@@ -42,10 +64,27 @@ export class MessageService {
   }
 
   async getMessagesByGroupId(
+    requesterId: string,
     groupId: string,
     cursor?: string,
     limit: number = 1,
   ): Promise<Result<CursorPaginationWrapper<Message>, DatabaseError>> {
+    const group = await this.groupRepository.findOne({
+      id: groupId,
+    });
+    if (!group) {
+      return err(new EntityNotFoundError('Group', groupId));
+    }
+
+    const userGroup = await this.userGroupRepository.findOne({
+      user: { id: requesterId },
+      group: { id: group.id },
+    });
+
+    if (!userGroup) {
+      return err(new EntityNotFoundError('UserGroup', requesterId));
+    }
+
     const numericLimit = Number(limit);
 
     const query: QueryType = { groupId };
@@ -54,8 +93,6 @@ export class MessageService {
       query.createdAt = { $lt: new Date(cursor) };
     }
 
-    //Handle error for groupId
-    //Check authentication and authorization
     try {
       const messages = await this.messageModel
         .find(query)
@@ -86,6 +123,17 @@ export class MessageService {
     messageId: string,
     requesterId: string,
   ): Promise<Result<null, DatabaseError>> {
+    const message = await this.messageModel.findById(messageId).exec();
+    if (!message) {
+      return err(new EntityNotFoundError('Message', messageId));
+    }
+
+    if (message.authorId !== requesterId) {
+      return err(
+        new UnauthorizedError('User is not the author of the message'),
+      );
+    }
+
     try {
       const deletedMessage = await this.messageModel
         .findByIdAndDelete(messageId)

@@ -17,20 +17,17 @@ export class GroupEntity {
   @PrimaryKey({ type: 'uuid' })
   id: string & Opt = uuidv4();
 
-  @Property({ name: 'owner_id' })
-  ownerId: string;
-
   @Property({ name: 'group_name' })
   groupName!: string;
 
   @Property({ name: 'logo_image' })
   logoImage?: string & Opt;
 
-  @ManyToOne({
-    entity: () => UserEntity,
-    fieldName: 'ownerId',
+  @ManyToOne(() => UserEntity, {
+    nullable: false,
+    fieldName: 'owner_id',
   })
-  owner?: UserEntity;
+  owner!: UserEntity;
 
   @ManyToMany({
     entity: () => UserEntity,

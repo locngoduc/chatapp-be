@@ -1,5 +1,5 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MessageModule } from '../message/message.module';
 import { UserEntity } from '../user/entities/user.entity';
 import { UserGroupEntity } from '../user_group/entities/user_group.entity';

@@ -1,5 +1,5 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
-import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
+import { EntityManager, EntityRepository, wrap } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { err, ok, Result } from 'neverthrow';
 import { DatabaseError } from 'src/shared/errors/database.error';
@@ -11,6 +11,9 @@ import { UserEntity } from '../user/entities/user.entity';
 import { AddUserRequestDto } from '../user_group/dto/add-user-request.dto';
 import { CloudinaryService } from '../files/impl/cloudinary.service';
 import { FileUploadError } from '../files/dtos/file-upload-error.dto';
+import { UnauthorizedError } from '../session/errors/unauthorized.error';
+import { UpdateGroupRequestDto } from './dto/update-group.dto';
+import { ConflictError } from 'src/shared/errors/conflict.error';
 
 //Pagination later
 @Injectable()
@@ -26,28 +29,47 @@ export class GroupService {
     private readonly entityManager: EntityManager,
   ) {}
 
-  async create(
+  async createGroup(
     createGroupDto: CreateGroupRequestDto,
-    logo: Express.Multer.File,
-  ): Promise<Result<GroupEntity, DatabaseError | FileUploadError>> {
-    const uploadResult = await this.cloudinaryService.uploadFile(logo, {
-      id: createGroupDto.groupName,
-      metadata: {
-        tags: ['group'],
-      },
-    });
-
-    if (uploadResult.isErr()) {
-      return err(uploadResult.error);
-    }
-
+    requesterId: string,
+    logo?: Express.Multer.File,
+  ): Promise<
+    Result<GroupEntity, DatabaseError | FileUploadError | EntityNotFoundError>
+  > {
     try {
+      let logoUrl: string | undefined;
+
+      if (logo) {
+        const uploadResult = await this.cloudinaryService.uploadFile(logo);
+
+        if (uploadResult.isErr()) {
+          return err(uploadResult.error);
+        }
+
+        logoUrl = uploadResult.value.url;
+      }
+
+      const owner = await this.userRepository.findOne({ id: requesterId });
+      if (!owner) {
+        return err(new EntityNotFoundError('User', requesterId));
+      }
+
       const group = this.groupRepository.create({
         groupName: createGroupDto.groupName,
-        logoImage: uploadResult.value.url,
+        logoImage:
+          logoUrl ??
+          `https://api.dicebear.com/9.x/initials/svg?seed=${createGroupDto.groupName}`,
+        owner: owner,
       });
 
-      await this.entityManager.persistAndFlush(group);
+      const userGroup = this.userGroupRepository.create({
+        user: owner,
+        group: group,
+      });
+
+      await this.entityManager.transactional(async (em) => {
+        await em.persistAndFlush([group, userGroup]);
+      });
 
       return ok(group);
     } catch (error) {
@@ -58,13 +80,17 @@ export class GroupService {
   async deleteGroup(
     groupId: string,
     requesterId: string,
-  ): Promise<Result<null, DatabaseError | EntityNotFoundError>> {
-    // Check if the requester is an admin of the group
-
-    const group = await this.groupRepository.findOne(groupId);
+  ): Promise<
+    Result<null, DatabaseError | EntityNotFoundError | UnauthorizedError>
+  > {
+    const group = await this.groupRepository.findOne({ id: groupId });
 
     if (!group) {
       return err(new EntityNotFoundError('Group', groupId));
+    }
+
+    if (requesterId !== group.owner.id) {
+      return err(new UnauthorizedError('User is not the owner of the group'));
     }
 
     try {
@@ -76,23 +102,96 @@ export class GroupService {
     }
   }
 
-  async addUser(
+  async getGroupById(
+    group_id: string,
+  ): Promise<Result<GroupEntity, EntityNotFoundError>> {
+    const group = await this.groupRepository.findOne(
+      { id: group_id },
+      { populate: ['users'] },
+    );
+    if (!group) {
+      return err(new EntityNotFoundError('Group', group_id));
+    }
+
+    return ok(group);
+  }
+
+  async updateGroup(
     groupId: string,
-    createMembershipDto: AddUserRequestDto,
+    updateGroupDto: UpdateGroupRequestDto,
     requesterId: string,
-  ): Promise<Result<UserGroupEntity, DatabaseError | EntityNotFoundError>> {
-    // Check if the requester is an admin of the group
+    logo?: Express.Multer.File,
+  ): Promise<
+    Result<
+      GroupEntity,
+      EntityNotFoundError | FileUploadError | UnauthorizedError | DatabaseError
+    >
+  > {
+    let logoUrl: string | undefined;
 
-    const { userId } = createMembershipDto;
+    if (logo) {
+      const uploadResult = await this.cloudinaryService.uploadFile(logo);
 
-    const user = await this.userRepository.findOne({ id: userId });
-    if (!user) {
-      return err(new EntityNotFoundError('User', userId));
+      if (uploadResult.isErr()) {
+        return err(uploadResult.error);
+      }
+      logoUrl = uploadResult.value.url;
     }
 
     const group = await this.groupRepository.findOne({ id: groupId });
     if (!group) {
       return err(new EntityNotFoundError('Group', groupId));
+    }
+
+    if (requesterId !== group.owner.id) {
+      return err(new UnauthorizedError('User is not the owner of the group'));
+    }
+
+    try {
+      wrap(group).assign({
+        ...updateGroupDto,
+        logoImage: logoUrl ?? group.logoImage,
+      });
+
+      await this.entityManager.persistAndFlush(group);
+
+      return ok(group);
+    } catch (error) {
+      return err(new DatabaseError('Group update failed!'));
+    }
+  }
+
+  async addUser(
+    groupId: string,
+    addUserDto: AddUserRequestDto,
+    requesterId: string,
+  ): Promise<
+    Result<
+      UserGroupEntity,
+      DatabaseError | EntityNotFoundError | UnauthorizedError | ConflictError
+    >
+  > {
+    const group = await this.groupRepository.findOne({ id: groupId });
+    if (!group) {
+      return err(new EntityNotFoundError('Group', groupId));
+    }
+
+    if (requesterId !== group.owner.id) {
+      return err(new UnauthorizedError('User is not the owner of the group'));
+    }
+
+    const { userId } = addUserDto;
+    const user = await this.userRepository.findOne({ id: userId });
+    if (!user) {
+      return err(new EntityNotFoundError('User', userId));
+    }
+
+    const existingMembership = await this.userGroupRepository.findOne({
+      user,
+      group,
+    });
+    if (existingMembership) {
+      return err(new ConflictError('User Group', userId + '  ' + groupId));
     }
 
     try {
@@ -113,31 +212,30 @@ export class GroupService {
     userId: string,
     groupId: string,
     requesterId: string,
-  ): Promise<Result<null, DatabaseError | EntityNotFoundError>> {
+  ): Promise<
+    Result<null, DatabaseError | EntityNotFoundError | UnauthorizedError>
+  > {
     const group = await this.groupRepository.findOne({ id: groupId });
 
     if (!group) {
       return err(new EntityNotFoundError('Group', groupId));
     }
 
-    if (requesterId !== group.ownerId) {
-      // Waiting for the authentication service to be merged
-      //return err(new UnauthorizedError('User is not the owner of the group'));
-    }
-
-    const userGroup = await this.userGroupRepository.findOne({
-      user: userId,
-      group: groupId,
-    });
-
-    if (!userGroup) {
-      return err(new EntityNotFoundError('UserGroup', userId + groupId));
+    if (requesterId !== group.owner.id) {
+      return err(new UnauthorizedError('User is not the owner of the group'));
     }
 
     const user = await this.userRepository.findOne({ id: userId });
-
     if (!user) {
       return err(new EntityNotFoundError('User', userId));
+    }
+
+    const userGroup = await this.userGroupRepository.findOne({
+      user: { id: userId },
+      group: { id: groupId },
+    });
+    if (!userGroup) {
+      return err(new EntityNotFoundError('UserGroup', userId + groupId));
     }
 
     try {
