@@ -35,6 +35,7 @@ async function bootstrap() {
     secret: configService.getOrThrow<string>('SESSION_SECRET'),
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 31,
+      sameSite: 'lax',
     },
   });
 
@@ -51,6 +52,13 @@ async function bootstrap() {
     ),
   );
 
+  // CORS
+  app.enableCors({
+    origin: configService.get('FRONTEND_URL'),
+    credentials: true,
+  });
+
   await app.listen(configService.get('APP_PORT'));
 }
+
 bootstrap();
