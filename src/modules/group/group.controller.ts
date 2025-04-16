@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   Res,
   UploadedFile,
@@ -52,7 +53,7 @@ export class GroupController {
     }
   }
 
-  @Post(':groupId')
+  @Put(':groupId')
   @UseGuards(AuthenticateGuard)
   @UseInterceptors(FileInterceptor('logo'))
   async updateGroup(
