@@ -20,6 +20,7 @@ export const envConfig = z.object({
   MONGO_DB: z.string().nonempty(),
   MONGO_HOST: z.string().nonempty(),
   MONGO_PORT: z.coerce.number(),
+  FRONTEND_URL: z.string().default('http://localhost:3000'),
 });
 
 export const envConfigParser = (env: Record<string, any>) => {
