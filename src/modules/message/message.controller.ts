@@ -4,6 +4,7 @@ import {
   Delete,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Res,
   UploadedFiles,
@@ -17,6 +18,7 @@ import { AuthenticateGuard } from '../session/guards/authenticate.guard';
 import { UserEntity } from '../user/entities/user.entity';
 import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
 import { MessageService } from './message.service';
+import { UpdateMessageRequestDto } from './dtos/update-message-request.dto';
 
 @Controller({ path: 'messages', version: '1' })
 export class MessageController {
@@ -44,11 +46,11 @@ export class MessageController {
     }
   }
 
-  @Post(':messageId')
+  @Patch(':messageId')
   @UseGuards(AuthenticateGuard)
   async updateMessage(
+    @Body() updateMessageDto: UpdateMessageRequestDto,
     @Param('messageId') messageId: string,
-    @Body() updateMessageDto: CreateMessageRequestDto,
     @Res() res: Response,
     @AuthUser() requester: UserEntity,
   ) {

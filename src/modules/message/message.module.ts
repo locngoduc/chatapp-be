@@ -10,6 +10,8 @@ import { MessageController } from './message.controller';
 import { GroupModule } from '../group/group.module';
 import { RedisModule } from '../redis/redis.module';
 import { FilesModule } from '../files/files.module';
+import { MessageQueueModule } from '../message-queue/message-queue.module';
+import { GatewayModule } from '../gateways/gateway.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { FilesModule } from '../files/files.module';
     forwardRef(() => GroupModule),
     RedisModule,
     FilesModule,
+    MessageQueueModule,
+    GatewayModule,
   ],
   providers: [MessageService, MessageGateway],
   exports: [MessageService, MessageGateway],

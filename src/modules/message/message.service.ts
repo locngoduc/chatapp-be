@@ -7,19 +7,20 @@ import { err, ok, Result } from 'neverthrow';
 import { CursorPaginationWrapper } from 'src/shared/classes/wrapper';
 import { DatabaseError } from 'src/shared/errors/database.error';
 import { EntityNotFoundError } from 'src/shared/errors/entity-not-found.error';
+import { FileUploadResult } from '../files/dtos/file-upload-result.dto';
+import { CloudinaryService } from '../files/impl/cloudinary.service';
 import { GroupEntity } from '../group/entities/group.entity';
 import { GroupService } from '../group/group.service';
+import { ChatPublisher } from '../message-queue/publisher';
 import { RedisService } from '../redis/redis.service';
 import { UserGroupEntity } from '../user_group/entities/user_group.entity';
 import { CreateMessageRequestDto } from './dtos/create-message-request.dto';
 import { UpdateMessageRequestDto } from './dtos/update-message-request.dto';
 import { MessageError } from './errors/base-message.error';
+import { FilesUploadError } from './errors/files-upload.error';
 import { NotMemberError } from './errors/not-member.error';
 import { NotOwnerError } from './errors/not-owner.error';
 import { Message, MessageDocument } from './schemas/message.schemas';
-import { CloudinaryService } from '../files/impl/cloudinary.service';
-import { FilesUploadError } from './errors/files-upload.error';
-import { FileUploadResult } from '../files/dtos/file-upload-result.dto';
 
 type QueryType = {
   groupId: string;
@@ -39,6 +40,7 @@ export class MessageService {
     private readonly redisService: RedisService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly groupService: GroupService,
+    private readonly publisher: ChatPublisher,
   ) {}
 
   private logger: Logger = new Logger(MessageService.name);
@@ -71,7 +73,7 @@ export class MessageService {
 
     console.log('Uploaded files:', uploadFiles);
 
-    const { groupId, content } = messageData;
+    const { groupId } = messageData;
 
     const group = await this.groupRepository.findOne({
       id: groupId,
@@ -106,6 +108,14 @@ export class MessageService {
       }
 
       const instanceMap = await this.groupUserIdsByInstance(result.value);
+
+      for (const [instanceId, userIds] of Object.entries(instanceMap)) {
+        await this.publisher.sendToInstance(instanceId, {
+          messageId: message.id,
+          targetIds: userIds,
+          messageType: 'create',
+        });
+      }
 
       // end: Publish to RabbitMQ here
 
@@ -196,7 +206,26 @@ export class MessageService {
       }
 
       // start: Publish to RabbitMQ here
+      const result = await this.groupService.getAllUserIdByGroupId(
+        message.groupId,
+      );
 
+      if (result.isErr()) {
+        this.logger.error(
+          `Error getting user IDs for group ${message.groupId}`,
+        );
+        return err(result.error);
+      }
+
+      const instanceMap = await this.groupUserIdsByInstance(result.value);
+
+      for (const [instanceId, userIds] of Object.entries(instanceMap)) {
+        await this.publisher.sendToInstance(instanceId, {
+          messageId: messageId,
+          targetIds: userIds,
+          messageType: 'delete',
+        });
+      }
       // end: Publish to RabbitMQ here
 
       return ok(null);
@@ -223,16 +252,12 @@ export class MessageService {
         return err(new NotOwnerError(requesterId, messageId));
       }
 
-      wrap(updatedMessage).assign({
-        ...messageData,
-        updatedAt: new Date(),
-      });
+      updatedMessage.content = messageData.content;
+      updatedMessage.updatedAt = new Date();
 
-      await this.entityManager.persistAndFlush(updatedMessage);
+      await updatedMessage.save();
 
       // start: Publish to RabbitMQ here
-      const { content } = messageData;
-
       const result = await this.groupService.getAllUserIdByGroupId(
         updatedMessage.groupId,
       );
@@ -245,9 +270,18 @@ export class MessageService {
       }
 
       const instanceMap = await this.groupUserIdsByInstance(result.value);
+
+      for (const [instanceId, userIds] of Object.entries(instanceMap)) {
+        await this.publisher.sendToInstance(instanceId, {
+          messageId: messageId,
+          targetIds: userIds,
+          messageType: 'update',
+        });
+      }
       // end: Publish to RabbitMQ here
       return ok(updatedMessage);
     } catch (error) {
+      this.logger.error(`Error updating message: ${error.message}`);
       return err(new DatabaseError('Unexpected error'));
     }
   }
@@ -279,5 +313,21 @@ export class MessageService {
     }
 
     return result;
+  }
+
+  async getMessageById(
+    messageId: string,
+  ): Promise<Result<Message, EntityNotFoundError | DatabaseError>> {
+    try {
+      const message = await this.messageModel.findById(messageId).exec();
+
+      if (!message) {
+        return err(new EntityNotFoundError('Message', messageId));
+      }
+
+      return ok(message);
+    } catch (error) {
+      return err(new DatabaseError('Unexpected error'));
+    }
   }
 }
