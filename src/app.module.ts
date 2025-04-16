@@ -18,6 +18,7 @@ import { PassportModule } from '@nestjs/passport';
 import { GatewayModule } from './modules/gateways/gateway.module';
 import { RedisModule } from './modules/redis/redis.module';
 import { LokiOptions } from 'pino-loki';
+import { MessageQueueModule } from './modules/message-queue/message-queue.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { LokiOptions } from 'pino-loki';
     PassportModule.register({ session: true }),
     GatewayModule,
     RedisModule,
+    MessageQueueModule,
   ],
   controllers: [AppController, FilesController],
   providers: [
