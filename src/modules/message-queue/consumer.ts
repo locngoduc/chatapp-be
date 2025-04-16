@@ -18,6 +18,9 @@ export class ChatConsumer implements OnModuleDestroy {
     exchange: 'chat_exchange',
     routingKey: process.env.INSTANCE_NAME,
     queue: process.env.INSTANCE_NAME,
+    queueOptions: {
+      autoDelete: true,
+    },
   })
   handleReceiveMessage(msg: any) {
     this.logger.log(
