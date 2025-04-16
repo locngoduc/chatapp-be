@@ -1,0 +1,136 @@
+services:
+  chat-db:
+    image: postgres:17.4-alpine
+    expose:
+      - '5432'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - chat-data:/var/lib/postgresql/data
+
+  chat-redis:
+    image: redis:7.4.0
+    container_name: chat-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    expose:
+      - '6379'
+    volumes:
+      - chat-session:/data
+
+  rabbitmq:
+    image: rabbitmq:4-alpine
+    container_name: chat-rabbitmq
+    expose:
+      - '5672'
+      - '15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+
+  envoy:
+    image: envoyproxy/envoy:v1.33-latest
+    container_name: chat-envoy
+    volumes:
+      - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml
+    ports:
+      - '8080:8080'
+      - '9901:9901'
+
+  chat-api-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    expose:
+      - '3001'
+    volumes:
+      - .:/app
+    depends_on:
+      - chat-db
+      - chat-redis
+      - rabbitmq
+      - loki
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_HOST=chat-db
+      - REDIS_HOST=chat-redis
+      - APP_PORT=3001
+      - INSTANCE_NAME=node-hcm-1
+
+  chat-api-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    expose:
+      - '3002'
+    volumes:
+      - .:/app
+    depends_on:
+      - chat-db
+      - chat-redis
+      - rabbitmq
+      - loki
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_HOST=chat-db
+      - REDIS_HOST=chat-redis
+      - APP_PORT=3002
+      - INSTANCE_NAME=node-hcm-2
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - '3100:3000'
+    volumes:
+      - ./grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - grafana-storage:/var/lib/grafana
+
+  loki:
+    image: grafana/loki:3.4.3
+    container_name: loki
+    volumes:
+      - loki-storage:/tmp
+    expose:
+      - '3100'
+    command: -config.file=/etc/loki/local-config.yaml
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    expose:
+      - '9090'
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-storage:/prometheus
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    expose:
+      - '8080'
+    command:
+      - --disable_metrics=disk,referenced_memory
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+volumes:
+  chat-data:
+  chat-session:
+  grafana-storage:
+  prometheus-storage:
+  loki-storage:
