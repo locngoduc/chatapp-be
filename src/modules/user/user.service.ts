@@ -15,6 +15,8 @@ import { CreateAccountRequestDto } from './dtos/create-account-request.dto';
 import { UserError } from './errors/base-user.error';
 import { EmailTakenError } from './errors/email-taken.error';
 import { DatabaseError } from 'src/shared/errors/database.error';
+import { GroupEntity } from '../group/entities/group.entity';
+import { EntityNotFoundError } from 'src/shared/errors/entity-not-found.error';
 
 @Injectable()
 export class UsersService {
@@ -52,6 +54,21 @@ export class UsersService {
       console.error(error);
       return err(new DatabaseError('Unexpected error'));
     }
+  }
+
+  async getGroupsByUserId(
+    userId: string,
+  ): Promise<Result<GroupEntity[], EntityNotFoundError>> {
+    const user = await this.usersRepository.findOne(
+      { id: userId },
+      { populate: ['groups'] },
+    );
+
+    if (!user) {
+      return err(new EntityNotFoundError('User', userId));
+    }
+
+    return ok(user.groups.getItems());
   }
 
   @OnEvent('user.created')

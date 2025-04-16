@@ -20,6 +20,13 @@ import { RedisModule } from './modules/redis/redis.module';
 import { LokiOptions } from 'pino-loki';
 import { MessageQueueModule } from './modules/message-queue/message-queue.module';
 
+import { MongooseModule } from '@nestjs/mongoose';
+import mongooseConfig, { MONGO_URI } from './config/mongoose.config';
+import { MessageModule } from './modules/message/message.module';
+import { GroupModule } from './modules/group/group.module';
+import { UserGroupModule } from './modules/user_group/user_group.module';
+import { MessageController } from './modules/message/message.controller';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: envConfigParser }),
@@ -28,6 +35,9 @@ import { MessageQueueModule } from './modules/message-queue/message-queue.module
       entities: undefined,
       entitiesTs: undefined,
       autoLoadEntities: true,
+    }),
+    MongooseModule.forRoot(MONGO_URI, {
+      ...mongooseConfig,
     }),
     EventEmitterModule.forRoot({ global: true }),
     LoggerModule.forRootAsync({
@@ -57,11 +67,14 @@ import { MessageQueueModule } from './modules/message-queue/message-queue.module
     FilesModule,
     SessionModule,
     PassportModule.register({ session: true }),
+    MessageModule,
+    GroupModule,
+    UserGroupModule,
     GatewayModule,
     RedisModule,
     MessageQueueModule,
   ],
-  controllers: [AppController, FilesController],
+  controllers: [AppController, FilesController, MessageController],
   providers: [
     AppService,
     {

@@ -1,11 +1,15 @@
 import {
   BeforeCreate,
+  Collection,
   Entity,
+  ManyToMany,
   Opt,
   PrimaryKey,
   Property,
 } from '@mikro-orm/core';
 import { IsEmail } from 'class-validator';
+import { GroupEntity } from '../../group/entities/group.entity';
+import { UserGroupEntity } from '../../user_group/entities/user_group.entity';
 import { v4 as uuidv4 } from 'uuid';
 
 @Entity({ tableName: 'users' })
@@ -44,4 +48,11 @@ export class UserEntity {
       this.profileImage = `https://api.dicebear.com/9.x/initials/svg?seed=${this.firstName + this.lastName}`;
     }
   }
+
+  @ManyToMany({
+    entity: () => GroupEntity,
+    pivotEntity: () => UserGroupEntity,
+    inversedBy: (e) => e.users,
+  })
+  groups = new Collection<GroupEntity>(this);
 }

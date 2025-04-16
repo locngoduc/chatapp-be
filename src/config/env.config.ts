@@ -15,6 +15,11 @@ export const envConfig = z.object({
   CLOUDINARY_NAME: z.string().nonempty(),
   CLOUDINARY_API_KEY: z.string().nonempty(),
   CLOUDINARY_API_SECRET: z.string().nonempty(),
+  MONGO_USER: z.string().nonempty(),
+  MONGO_PASSWORD: z.string().nonempty(),
+  MONGO_DB: z.string().nonempty(),
+  MONGO_HOST: z.string().nonempty(),
+  MONGO_PORT: z.coerce.number(),
 });
 
 export const envConfigParser = (env: Record<string, any>) => {

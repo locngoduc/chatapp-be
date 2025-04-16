@@ -92,6 +92,20 @@ services:
     networks:
       - chat_network
 
+  chat-mongo:
+      image: mongo:7.0.5
+      container_name: chat-mongo
+      restart: always
+      ports:
+        - "27017:27017"
+      environment:
+        MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+        MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+        MONGO_INITDB_DATABASE: ${MONGO_DB}
+      volumes:
+        - chat-mongo-data:/data/db
+      networks:
+        - chat_network
 networks:
   chat_network:
     driver: bridge
@@ -99,3 +113,4 @@ networks:
 volumes:
   chat-data:
   chat-session:
+  chat-mongo-data:
